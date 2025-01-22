@@ -13,10 +13,14 @@ export enum Collections {
 	Superusers = "_superusers",
 	Categories = "categories",
 	Comments = "comments",
+	FeaturedCategories = "featuredCategories",
+	FeaturedProducts = "featuredProducts",
 	Images = "images",
 	Products = "products",
+	PromotedProducts = "promotedProducts",
 	Series = "series",
 	Users = "users",
+	Wishlists = "wishlists",
 }
 
 // Alias types for improved usability
@@ -108,6 +112,20 @@ export type CommentsRecord = {
 	users?: RecordIdString
 }
 
+export type FeaturedCategoriesRecord = {
+	categories: RecordIdString
+	created?: IsoDateString
+	id: string
+	updated?: IsoDateString
+}
+
+export type FeaturedProductsRecord = {
+	created?: IsoDateString
+	id: string
+	products: RecordIdString
+	updated?: IsoDateString
+}
+
 export type ImagesRecord = {
 	created?: IsoDateString
 	id: string
@@ -126,11 +144,19 @@ export type ProductsRecord<Ttags = unknown> = {
 	image3?: string
 	image4?: string
 	originalPrice: number
+	priority: number
 	series?: RecordIdString
 	slug: string
 	summary?: string
 	tags?: null | Ttags
 	title?: string
+	updated?: IsoDateString
+}
+
+export type PromotedProductsRecord = {
+	created?: IsoDateString
+	id: string
+	products: RecordIdString
 	updated?: IsoDateString
 }
 
@@ -156,6 +182,14 @@ export type UsersRecord = {
 	verified?: boolean
 }
 
+export type WishlistsRecord = {
+	created?: IsoDateString
+	id: string
+	products: RecordIdString
+	updated?: IsoDateString
+	users: RecordIdString
+}
+
 // Response types include system fields and match responses from the PocketBase API
 export type AuthoriginsResponse<Texpand = unknown> = Required<AuthoriginsRecord> & BaseSystemFields<Texpand>
 export type ExternalauthsResponse<Texpand = unknown> = Required<ExternalauthsRecord> & BaseSystemFields<Texpand>
@@ -164,10 +198,14 @@ export type OtpsResponse<Texpand = unknown> = Required<OtpsRecord> & BaseSystemF
 export type SuperusersResponse<Texpand = unknown> = Required<SuperusersRecord> & AuthSystemFields<Texpand>
 export type CategoriesResponse<Texpand = unknown> = Required<CategoriesRecord> & BaseSystemFields<Texpand>
 export type CommentsResponse<Texpand = unknown> = Required<CommentsRecord> & BaseSystemFields<Texpand>
+export type FeaturedCategoriesResponse<Texpand = unknown> = Required<FeaturedCategoriesRecord> & BaseSystemFields<Texpand>
+export type FeaturedProductsResponse<Texpand = unknown> = Required<FeaturedProductsRecord> & BaseSystemFields<Texpand>
 export type ImagesResponse<Texpand = unknown> = Required<ImagesRecord> & BaseSystemFields<Texpand>
 export type ProductsResponse<Ttags = unknown, Texpand = unknown> = Required<ProductsRecord<Ttags>> & BaseSystemFields<Texpand>
+export type PromotedProductsResponse<Texpand = unknown> = Required<PromotedProductsRecord> & BaseSystemFields<Texpand>
 export type SeriesResponse<Texpand = unknown> = Required<SeriesRecord> & BaseSystemFields<Texpand>
 export type UsersResponse<Texpand = unknown> = Required<UsersRecord> & AuthSystemFields<Texpand>
+export type WishlistsResponse<Texpand = unknown> = Required<WishlistsRecord> & BaseSystemFields<Texpand>
 
 // Types containing all Records and Responses, useful for creating typing helper functions
 
@@ -179,10 +217,14 @@ export type CollectionRecords = {
 	_superusers: SuperusersRecord
 	categories: CategoriesRecord
 	comments: CommentsRecord
+	featuredCategories: FeaturedCategoriesRecord
+	featuredProducts: FeaturedProductsRecord
 	images: ImagesRecord
 	products: ProductsRecord
+	promotedProducts: PromotedProductsRecord
 	series: SeriesRecord
 	users: UsersRecord
+	wishlists: WishlistsRecord
 }
 
 export type CollectionResponses = {
@@ -193,10 +235,14 @@ export type CollectionResponses = {
 	_superusers: SuperusersResponse
 	categories: CategoriesResponse
 	comments: CommentsResponse
+	featuredCategories: FeaturedCategoriesResponse
+	featuredProducts: FeaturedProductsResponse
 	images: ImagesResponse
 	products: ProductsResponse
+	promotedProducts: PromotedProductsResponse
 	series: SeriesResponse
 	users: UsersResponse
+	wishlists: WishlistsResponse
 }
 
 // Type for usage with type asserted PocketBase instance
@@ -210,8 +256,12 @@ export type TypedPocketBase = PocketBase & {
 	collection(idOrName: '_superusers'): RecordService<SuperusersResponse>
 	collection(idOrName: 'categories'): RecordService<CategoriesResponse>
 	collection(idOrName: 'comments'): RecordService<CommentsResponse>
+	collection(idOrName: 'featuredCategories'): RecordService<FeaturedCategoriesResponse>
+	collection(idOrName: 'featuredProducts'): RecordService<FeaturedProductsResponse>
 	collection(idOrName: 'images'): RecordService<ImagesResponse>
 	collection(idOrName: 'products'): RecordService<ProductsResponse>
+	collection(idOrName: 'promotedProducts'): RecordService<PromotedProductsResponse>
 	collection(idOrName: 'series'): RecordService<SeriesResponse>
 	collection(idOrName: 'users'): RecordService<UsersResponse>
+	collection(idOrName: 'wishlists'): RecordService<WishlistsResponse>
 }
