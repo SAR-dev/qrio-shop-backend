@@ -15,6 +15,7 @@ export enum Collections {
 	Comments = "comments",
 	FeaturedCategories = "featuredCategories",
 	FeaturedProducts = "featuredProducts",
+	FeaturedSeries = "featuredSeries",
 	Images = "images",
 	Products = "products",
 	PromotedProducts = "promotedProducts",
@@ -96,6 +97,7 @@ export type SuperusersRecord = {
 
 export type CategoriesRecord = {
 	created?: IsoDateString
+	description?: string
 	id: string
 	slug: string
 	thumbnail?: string
@@ -126,6 +128,13 @@ export type FeaturedProductsRecord = {
 	updated?: IsoDateString
 }
 
+export type FeaturedSeriesRecord = {
+	created?: IsoDateString
+	id: string
+	series: RecordIdString
+	updated?: IsoDateString
+}
+
 export type ImagesRecord = {
 	created?: IsoDateString
 	id: string
@@ -134,6 +143,7 @@ export type ImagesRecord = {
 }
 
 export type ProductsRecord<Ttags = unknown> = {
+	buyingPrice?: number
 	categories?: RecordIdString
 	created?: IsoDateString
 	description?: HTMLString
@@ -143,8 +153,8 @@ export type ProductsRecord<Ttags = unknown> = {
 	image2?: string
 	image3?: string
 	image4?: string
-	originalPrice: number
 	priority: number
+	sellingPrice: number
 	series?: RecordIdString
 	slug: string
 	summary?: string
@@ -161,6 +171,7 @@ export type PromotedProductsRecord = {
 }
 
 export type SeriesRecord = {
+	cover?: string
 	created?: IsoDateString
 	id: string
 	slug: string
@@ -200,6 +211,7 @@ export type CategoriesResponse<Texpand = unknown> = Required<CategoriesRecord> &
 export type CommentsResponse<Texpand = unknown> = Required<CommentsRecord> & BaseSystemFields<Texpand>
 export type FeaturedCategoriesResponse<Texpand = unknown> = Required<FeaturedCategoriesRecord> & BaseSystemFields<Texpand>
 export type FeaturedProductsResponse<Texpand = unknown> = Required<FeaturedProductsRecord> & BaseSystemFields<Texpand>
+export type FeaturedSeriesResponse<Texpand = unknown> = Required<FeaturedSeriesRecord> & BaseSystemFields<Texpand>
 export type ImagesResponse<Texpand = unknown> = Required<ImagesRecord> & BaseSystemFields<Texpand>
 export type ProductsResponse<Ttags = unknown, Texpand = unknown> = Required<ProductsRecord<Ttags>> & BaseSystemFields<Texpand>
 export type PromotedProductsResponse<Texpand = unknown> = Required<PromotedProductsRecord> & BaseSystemFields<Texpand>
@@ -219,6 +231,7 @@ export type CollectionRecords = {
 	comments: CommentsRecord
 	featuredCategories: FeaturedCategoriesRecord
 	featuredProducts: FeaturedProductsRecord
+	featuredSeries: FeaturedSeriesRecord
 	images: ImagesRecord
 	products: ProductsRecord
 	promotedProducts: PromotedProductsRecord
@@ -237,6 +250,7 @@ export type CollectionResponses = {
 	comments: CommentsResponse
 	featuredCategories: FeaturedCategoriesResponse
 	featuredProducts: FeaturedProductsResponse
+	featuredSeries: FeaturedSeriesResponse
 	images: ImagesResponse
 	products: ProductsResponse
 	promotedProducts: PromotedProductsResponse
@@ -258,6 +272,7 @@ export type TypedPocketBase = PocketBase & {
 	collection(idOrName: 'comments'): RecordService<CommentsResponse>
 	collection(idOrName: 'featuredCategories'): RecordService<FeaturedCategoriesResponse>
 	collection(idOrName: 'featuredProducts'): RecordService<FeaturedProductsResponse>
+	collection(idOrName: 'featuredSeries'): RecordService<FeaturedSeriesResponse>
 	collection(idOrName: 'images'): RecordService<ImagesResponse>
 	collection(idOrName: 'products'): RecordService<ProductsResponse>
 	collection(idOrName: 'promotedProducts'): RecordService<PromotedProductsResponse>
