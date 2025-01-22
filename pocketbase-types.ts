@@ -14,6 +14,7 @@ export enum Collections {
 	Categories = "categories",
 	Comments = "comments",
 	Images = "images",
+	Products = "products",
 	Series = "series",
 	Users = "users",
 }
@@ -114,6 +115,25 @@ export type ImagesRecord = {
 	updated?: IsoDateString
 }
 
+export type ProductsRecord<Ttags = unknown> = {
+	categories?: RecordIdString
+	created?: IsoDateString
+	description?: HTMLString
+	discount?: number
+	id: string
+	image1?: string
+	image2?: string
+	image3?: string
+	image4?: string
+	originalPrice: number
+	series?: RecordIdString
+	slug: string
+	summary?: string
+	tags?: null | Ttags
+	title?: string
+	updated?: IsoDateString
+}
+
 export type SeriesRecord = {
 	created?: IsoDateString
 	id: string
@@ -145,6 +165,7 @@ export type SuperusersResponse<Texpand = unknown> = Required<SuperusersRecord> &
 export type CategoriesResponse<Texpand = unknown> = Required<CategoriesRecord> & BaseSystemFields<Texpand>
 export type CommentsResponse<Texpand = unknown> = Required<CommentsRecord> & BaseSystemFields<Texpand>
 export type ImagesResponse<Texpand = unknown> = Required<ImagesRecord> & BaseSystemFields<Texpand>
+export type ProductsResponse<Ttags = unknown, Texpand = unknown> = Required<ProductsRecord<Ttags>> & BaseSystemFields<Texpand>
 export type SeriesResponse<Texpand = unknown> = Required<SeriesRecord> & BaseSystemFields<Texpand>
 export type UsersResponse<Texpand = unknown> = Required<UsersRecord> & AuthSystemFields<Texpand>
 
@@ -159,6 +180,7 @@ export type CollectionRecords = {
 	categories: CategoriesRecord
 	comments: CommentsRecord
 	images: ImagesRecord
+	products: ProductsRecord
 	series: SeriesRecord
 	users: UsersRecord
 }
@@ -172,6 +194,7 @@ export type CollectionResponses = {
 	categories: CategoriesResponse
 	comments: CommentsResponse
 	images: ImagesResponse
+	products: ProductsResponse
 	series: SeriesResponse
 	users: UsersResponse
 }
@@ -188,6 +211,7 @@ export type TypedPocketBase = PocketBase & {
 	collection(idOrName: 'categories'): RecordService<CategoriesResponse>
 	collection(idOrName: 'comments'): RecordService<CommentsResponse>
 	collection(idOrName: 'images'): RecordService<ImagesResponse>
+	collection(idOrName: 'products'): RecordService<ProductsResponse>
 	collection(idOrName: 'series'): RecordService<SeriesResponse>
 	collection(idOrName: 'users'): RecordService<UsersResponse>
 }
