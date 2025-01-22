@@ -100,8 +100,8 @@ export type CategoriesRecord = {
 	description?: string
 	id: string
 	slug: string
-	thumbnail?: string
-	title?: string
+	thumbnail?: RecordIdString
+	title: string
 	updated?: IsoDateString
 }
 
@@ -139,6 +139,7 @@ export type ImagesRecord = {
 	created?: IsoDateString
 	id: string
 	source: string
+	title?: string
 	updated?: IsoDateString
 }
 
@@ -149,17 +150,14 @@ export type ProductsRecord<Ttags = unknown> = {
 	description?: HTMLString
 	discount?: number
 	id: string
-	image1?: string
-	image2?: string
-	image3?: string
-	image4?: string
+	images?: RecordIdString[]
 	priority: number
 	sellingPrice: number
 	series?: RecordIdString
 	slug: string
 	summary?: string
 	tags?: null | Ttags
-	title?: string
+	title: string
 	updated?: IsoDateString
 }
 
@@ -171,12 +169,12 @@ export type PromotedProductsRecord = {
 }
 
 export type SeriesRecord = {
-	cover?: string
+	cover?: RecordIdString
 	created?: IsoDateString
 	id: string
 	slug: string
-	thumbnail?: string
-	title?: string
+	thumbnail?: RecordIdString
+	title: string
 	updated?: IsoDateString
 }
 
