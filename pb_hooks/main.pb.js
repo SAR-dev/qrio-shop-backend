@@ -59,22 +59,9 @@ routerAdd("GET", "/api/homepage", (c) => {
         .all(products);
 
     products.forEach((product) => {
-        console.log(product.categories)
         const foundIndex = res.featuredCategories.findIndex(e => e.id == product.categories)
         res.featuredCategories[foundIndex].products = [...res.featuredCategories[foundIndex].products, {...product}]
     })
-    // featuredCategories.map(e => e.publicExport()).forEach((category) => {
-    //     const products = $app.findRecordsByFilter(
-    //         "products",                                     // collection
-    //         "categories = {:category}",                     // filter
-    //         "priority",                                     // sort
-    //         4,                                              // limit
-    //         0,                                              // offset
-    //         {category: category.categories},                // optional filter params
-    //     )
-        
-    //     res.featuredCategories.push({category, products})
-    // })
 
     return c.json(200, res)
 })
