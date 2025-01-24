@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon --watch pb_hooks --ext js,json --exec \"./pocketbase serve --dev\"",
+    "start": "nodemon --watch pb_hooks --ext js,json --exec \"./pocketbase.exe serve --dev\"",
     "typegen": "pocketbase-typegen --db ./pb_data/data.db --out pocketbase-types.ts"
   },
   "keywords": [],
