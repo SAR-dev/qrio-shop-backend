@@ -10,6 +10,7 @@ routerAdd("GET", "/api/homepage", (c) => {
     }))
 
     const featuredSeries = arrayOf(new DynamicModel({
+        tagLine: '',
         seriesId: '',
         seriesTitle: '',
         seriesSlug: '',
@@ -25,6 +26,7 @@ routerAdd("GET", "/api/homepage", (c) => {
     }))
 
     const featuredCategories = arrayOf(new DynamicModel({
+        tagLine: '',
         categoryId: '',
         categoryTitle: '',
         categorySlug: '',
@@ -59,6 +61,7 @@ routerAdd("GET", "/api/homepage", (c) => {
         .newQuery(`
             WITH rankedProducts AS (
                 SELECT 
+                    fs.tagLine,
                     p.id AS productId,
                     p.title AS productTitle,
                     p.slug AS productSlug, 
@@ -73,10 +76,11 @@ routerAdd("GET", "/api/homepage", (c) => {
                     ROW_NUMBER() OVER (PARTITION BY p.series ORDER BY p.priority DESC, p.id) AS rn
                 FROM products p
                 JOIN series s ON p.series = s.id
+                JOIN featuredSeries fs ON fs.series = s.id
                 LEFT JOIN images pi ON pi.id = REPLACE(p.images ->> 0, '"', '')
                 LEFT JOIN images si ON si.id = s.cover
                 WHERE p.series IN (
-                    SELECT series FROM featuredSeries LIMIT 3
+                    SELECT series FROM featuredSeries
                 )
             )
             SELECT * FROM rankedProducts
@@ -86,6 +90,7 @@ routerAdd("GET", "/api/homepage", (c) => {
 
     const seriesList = featuredSeries.map(series => {
         return {
+            tagLine: series.tagLine,
             seriesId: series.seriesId,
             seriesTitle: series.seriesTitle,
             seriesSlug: series.seriesSlug,
@@ -114,6 +119,7 @@ routerAdd("GET", "/api/homepage", (c) => {
         .newQuery(`
             WITH rankedProducts AS (
                 SELECT 
+                    fc.tagLine,
                     p.id AS productId,
                     p.title AS productTitle,
                     p.slug AS productSlug, 
@@ -128,10 +134,11 @@ routerAdd("GET", "/api/homepage", (c) => {
                     ROW_NUMBER() OVER (PARTITION BY p.categories ORDER BY p.priority DESC, p.id) AS rn
                 FROM products p
                 JOIN categories c ON p.categories = c.id
+                JOIN featuredCategories fc ON fc.categories = c.id
                 LEFT JOIN images pi ON pi.id = REPLACE(p.images ->> 0, '"', '')
                 LEFT JOIN images ci ON ci.id = c.thumbnail
                 WHERE p.categories IN (
-                    SELECT categories FROM featuredCategories LIMIT 3
+                    SELECT categories FROM featuredCategories
                 )
             )
             SELECT * FROM rankedProducts
@@ -141,6 +148,7 @@ routerAdd("GET", "/api/homepage", (c) => {
 
     const categories = featuredCategories.map(category => {
         return {
+            tagLine: category.tagLine,
             categoryId: category.categoryId,
             categoryTitle: category.categoryTitle,
             categorySlug: category.categorySlug,
