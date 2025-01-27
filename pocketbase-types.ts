@@ -16,6 +16,7 @@ export enum Collections {
 	FeaturedCategories = "featuredCategories",
 	FeaturedProducts = "featuredProducts",
 	FeaturedSeries = "featuredSeries",
+	HomepageCarousel = "homepageCarousel",
 	Images = "images",
 	Products = "products",
 	PromotedProducts = "promotedProducts",
@@ -118,6 +119,7 @@ export type FeaturedCategoriesRecord = {
 	categories: RecordIdString
 	created?: IsoDateString
 	id: string
+	tagLine: string
 	updated?: IsoDateString
 }
 
@@ -132,6 +134,20 @@ export type FeaturedSeriesRecord = {
 	created?: IsoDateString
 	id: string
 	series: RecordIdString
+	tagLine: string
+	updated?: IsoDateString
+}
+
+export type HomepageCarouselRecord = {
+	buttonText?: string
+	created?: IsoDateString
+	id: string
+	images: RecordIdString
+	priority: number
+	redirectTo?: string
+	subtitle?: string
+	title1?: string
+	title2?: string
 	updated?: IsoDateString
 }
 
@@ -151,6 +167,7 @@ export type ProductsRecord<Ttags = unknown> = {
 	discount?: number
 	id: string
 	images?: RecordIdString[]
+	inStock?: boolean
 	priority: number
 	sellingPrice: number
 	series?: RecordIdString
@@ -210,6 +227,7 @@ export type CommentsResponse<Texpand = unknown> = Required<CommentsRecord> & Bas
 export type FeaturedCategoriesResponse<Texpand = unknown> = Required<FeaturedCategoriesRecord> & BaseSystemFields<Texpand>
 export type FeaturedProductsResponse<Texpand = unknown> = Required<FeaturedProductsRecord> & BaseSystemFields<Texpand>
 export type FeaturedSeriesResponse<Texpand = unknown> = Required<FeaturedSeriesRecord> & BaseSystemFields<Texpand>
+export type HomepageCarouselResponse<Texpand = unknown> = Required<HomepageCarouselRecord> & BaseSystemFields<Texpand>
 export type ImagesResponse<Texpand = unknown> = Required<ImagesRecord> & BaseSystemFields<Texpand>
 export type ProductsResponse<Ttags = unknown, Texpand = unknown> = Required<ProductsRecord<Ttags>> & BaseSystemFields<Texpand>
 export type PromotedProductsResponse<Texpand = unknown> = Required<PromotedProductsRecord> & BaseSystemFields<Texpand>
@@ -230,6 +248,7 @@ export type CollectionRecords = {
 	featuredCategories: FeaturedCategoriesRecord
 	featuredProducts: FeaturedProductsRecord
 	featuredSeries: FeaturedSeriesRecord
+	homepageCarousel: HomepageCarouselRecord
 	images: ImagesRecord
 	products: ProductsRecord
 	promotedProducts: PromotedProductsRecord
@@ -249,6 +268,7 @@ export type CollectionResponses = {
 	featuredCategories: FeaturedCategoriesResponse
 	featuredProducts: FeaturedProductsResponse
 	featuredSeries: FeaturedSeriesResponse
+	homepageCarousel: HomepageCarouselResponse
 	images: ImagesResponse
 	products: ProductsResponse
 	promotedProducts: PromotedProductsResponse
@@ -271,6 +291,7 @@ export type TypedPocketBase = PocketBase & {
 	collection(idOrName: 'featuredCategories'): RecordService<FeaturedCategoriesResponse>
 	collection(idOrName: 'featuredProducts'): RecordService<FeaturedProductsResponse>
 	collection(idOrName: 'featuredSeries'): RecordService<FeaturedSeriesResponse>
+	collection(idOrName: 'homepageCarousel'): RecordService<HomepageCarouselResponse>
 	collection(idOrName: 'images'): RecordService<ImagesResponse>
 	collection(idOrName: 'products'): RecordService<ProductsResponse>
 	collection(idOrName: 'promotedProducts'): RecordService<PromotedProductsResponse>

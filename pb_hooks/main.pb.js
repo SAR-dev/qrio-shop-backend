@@ -9,38 +9,6 @@ routerAdd("GET", "/api/homepage", (c) => {
         imageSource: ''
     }))
 
-    const featuredSeries = arrayOf(new DynamicModel({
-        tagLine: '',
-        seriesId: '',
-        seriesTitle: '',
-        seriesSlug: '',
-        seriesImageId: '',
-        seriesImageSource: '',
-
-        productId: '',
-        productTitle: '',
-        productSlug: '',
-        productPrice: 0,
-        productImageId: '',
-        productImageSource: ''
-    }))
-
-    const featuredCategories = arrayOf(new DynamicModel({
-        tagLine: '',
-        categoryId: '',
-        categoryTitle: '',
-        categorySlug: '',
-        categoryImageId: '',
-        categoryImageSource: '',
-
-        productId: '',
-        productTitle: '',
-        productSlug: '',
-        productPrice: 0,
-        productImageId: '',
-        productImageSource: ''
-    }))
-
     $app.db()
         .newQuery(`
             SELECT 
@@ -57,6 +25,22 @@ routerAdd("GET", "/api/homepage", (c) => {
         `)
         .all(homepageCarousel)
 
+    const featuredSeries = arrayOf(new DynamicModel({
+        tagLine: '',
+        seriesId: '',
+        seriesTitle: '',
+        seriesSlug: '',
+        seriesImageId: '',
+        seriesImageSource: '',
+
+        productId: '',
+        productTitle: '',
+        productSlug: '',
+        productPrice: 0,
+        productImageId: '',
+        productImageSource: ''
+    }))
+    
     $app.db()
         .newQuery(`
             WITH rankedProducts AS (
@@ -115,6 +99,22 @@ routerAdd("GET", "/api/homepage", (c) => {
         }]
     })
 
+    const featuredCategories = arrayOf(new DynamicModel({
+        tagLine: '',
+        categoryId: '',
+        categoryTitle: '',
+        categorySlug: '',
+        categoryImageId: '',
+        categoryImageSource: '',
+
+        productId: '',
+        productTitle: '',
+        productSlug: '',
+        productPrice: 0,
+        productImageId: '',
+        productImageSource: ''
+    }))
+    
     $app.db()
         .newQuery(`
             WITH rankedProducts AS (
