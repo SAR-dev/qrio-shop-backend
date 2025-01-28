@@ -457,3 +457,15 @@ routerAdd("GET", "/api/suggest-products/{id}", (c) => {
         suggestedProducts
     })
 })
+
+routerAdd("POST", "/api/add-to-cart", (c) => {
+    let userId = c.requestInfo().auth?.id
+
+    // get payload with product id
+
+    // get cart id and product id
+
+    // if exists increase amount
+
+    // if does not exist create with amount 1
+})
