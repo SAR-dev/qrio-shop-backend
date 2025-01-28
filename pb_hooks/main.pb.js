@@ -66,6 +66,7 @@ routerAdd("GET", "/api/homepage", (c) => {
                 WHERE p.series IN (
                     SELECT series FROM featuredSeries
                 )
+                AND p.inStock = 1
             )
             SELECT * FROM rankedProducts
             WHERE rn <= 4   
@@ -140,6 +141,7 @@ routerAdd("GET", "/api/homepage", (c) => {
                 WHERE p.categories IN (
                     SELECT categories FROM featuredCategories
                 )
+                AND p.inStock = 1
             )
             SELECT * FROM rankedProducts
             WHERE rn <= 4     
@@ -177,5 +179,221 @@ routerAdd("GET", "/api/homepage", (c) => {
         featuredCategories: unqCategories,
         featuredSeries: unqSeries,
         homepageCarousel
+    })
+});
+
+routerAdd("GET", "/api/homepage-products", (c) => {
+    const promotedProducts = arrayOf(new DynamicModel({
+        id: '',
+        title: '',
+        tagLine: '',
+        slug: '',
+        sellingPrice: '',
+        discount: '',
+        summary: '',
+        productImageId: '',
+        productImageSource: '',
+        categoryTitle: '',
+        categorySlug: '',
+        seriesTitle: '',
+        seriesSlug: ''
+    }))
+
+    $app.db()
+        .newQuery(`
+            SELECT 
+                p.id,
+                p.title,
+                pp.tagLine,
+                p.slug,
+                p.sellingPrice,
+                p.discount,
+                p.summary,
+                COALESCE(ct.title, '') AS categoryTitle,
+                COALESCE(ct.slug, '') AS categorySlug,
+                COALESCE(s.title, '') AS seriesTitle,
+                COALESCE(s.slug, '') AS seriesSlug,
+                COALESCE(pi.id, '') AS productImageId,
+                COALESCE(pi.source, '') AS productImageSource
+            FROM promotedProducts pp 
+            JOIN products p ON pp.products = p.id
+            LEFT JOIN images pi ON pi.id = REPLACE(p.images ->> 0, '"', '')
+            LEFT JOIN categories ct ON p.categories = ct.id 
+            LEFT JOIN series s ON p.series = s.id
+        `)
+        .all(promotedProducts)
+
+    const trendingProducts = arrayOf(new DynamicModel({
+        id: '',
+        title: '',
+        tagLine: '',
+        slug: '',
+        sellingPrice: '',
+        discount: '',
+        summary: '',
+        productImageId: '',
+        productImageSource: '',
+        categoryTitle: '',
+        categorySlug: '',
+        seriesTitle: '',
+        seriesSlug: ''
+    }))
+
+    $app.db()
+        .newQuery(`
+            SELECT 
+                p.id,
+                p.title,
+                p.slug,
+                p.sellingPrice,
+                p.discount,
+                p.summary,
+                COALESCE(ct.title, '') AS categoryTitle,
+                COALESCE(ct.slug, '') AS categorySlug,
+                COALESCE(s.title, '') AS seriesTitle,
+                COALESCE(s.slug, '') AS seriesSlug,
+                COALESCE(pi.id, '') AS productImageId,
+                COALESCE(pi.source, '') AS productImageSource,
+                COUNT(CASE WHEN c.id IS NOT NULL THEN 1 END) AS counts
+            FROM products p
+            LEFT JOIN carts c ON p.id = c.products
+            LEFT JOIN images pi ON pi.id = REPLACE(p.images ->> 0, '"', '')
+            LEFT JOIN categories ct ON p.categories = ct.id 
+            LEFT JOIN series s ON p.series = s.id
+            WHERE p.inStock = 1
+            GROUP BY p.id
+            ORDER BY counts DESC, p.priority DESC
+            LIMIT 8
+        `)
+        .all(trendingProducts)
+
+    const discountProducts = arrayOf(new DynamicModel({
+        id: '',
+        title: '',
+        tagLine: '',
+        slug: '',
+        sellingPrice: '',
+        discount: '',
+        summary: '',
+        productImageId: '',
+        productImageSource: '',
+        categoryTitle: '',
+        categorySlug: '',
+        seriesTitle: '',
+        seriesSlug: ''
+    }))
+
+    $app.db()
+        .newQuery(`
+            SELECT 
+                p.id,
+                p.title,
+                p.slug,
+                p.sellingPrice,
+                p.discount,
+                p.summary,
+                COALESCE(ct.title, '') AS categoryTitle,
+                COALESCE(ct.slug, '') AS categorySlug,
+                COALESCE(s.title, '') AS seriesTitle,
+                COALESCE(s.slug, '') AS seriesSlug,
+                COALESCE(pi.id, '') AS productImageId,
+                COALESCE(pi.source, '') AS productImageSource
+            FROM products p
+            LEFT JOIN images pi ON pi.id = REPLACE(p.images ->> 0, '"', '')
+            LEFT JOIN categories ct ON p.categories = ct.id 
+            LEFT JOIN series s ON p.series = s.id
+            WHERE p.inStock = 1
+            ORDER BY p.discount DESC 
+            LIMIT 8
+        `)
+        .all(discountProducts)
+
+    return c.json(200, {
+        trendingProducts,
+        discountProducts,
+        promotedProducts
+    })
+})
+
+routerAdd("GET", "/api/homepage-lists", (c) => {
+    const seriesList = arrayOf(new DynamicModel({
+        id: '',
+        title: '',
+        slug: '',
+        seriesImageId: '',
+        seriesImageSource: ''
+    }))
+
+    $app.db()
+        .newQuery(`
+            SELECT 
+                s.id,
+                s.title,
+                s.slug,
+                COALESCE(i.id, '') AS seriesImageId,
+                COALESCE(i.source, '') AS seriesImageSource
+            FROM series s
+            LEFT JOIN images i ON i.id = s.thumbnail 
+            ORDER BY s.priority DESC
+            LIMIT 12
+        `)
+        .all(seriesList)
+
+    const blogList = arrayOf(new DynamicModel({
+        id: '',
+        title: '',
+        slug: '',
+        category: '',
+        publishedAt: '',
+        summary: '',
+        blogImageId: '',
+        blogImageSource: ''
+    }))
+
+    $app.db()
+        .newQuery(`
+            SELECT 
+                b.id,
+                b.title,
+                b.slug,
+                b.category,
+                b.publishedAt,
+                b.summary,
+                COALESCE(i.id, '') AS blogImageId,
+                COALESCE(i.source, '') AS blogImageSource
+            FROM blogs b
+            LEFT JOIN images i ON i.id = b.cover 
+            ORDER BY b.publishedAt DESC
+            LIMIT 5
+        `)
+        .all(blogList)
+
+    const categoryList = arrayOf(new DynamicModel({
+        id: '',
+        title: '',
+        slug: '',
+        categoryImageId: '',
+        categoryImageSource: ''
+    }))
+
+    $app.db()
+        .newQuery(`
+            SELECT 
+                c.id,
+                c.title,
+                c.slug,
+                COALESCE(i.id, '') AS categoryImageId,
+                COALESCE(i.source, '') AS categoryImageSource
+            FROM categories c
+            LEFT JOIN images i ON i.id = c.thumbnail 
+            ORDER BY c.priority DESC
+            LIMIT 30
+        `)
+        .all(categoryList)
+
+    return c.json(200, {
+        seriesList,
+        blogList,
+        categoryList
     })
 })

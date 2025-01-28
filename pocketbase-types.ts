@@ -11,6 +11,8 @@ export enum Collections {
 	Mfas = "_mfas",
 	Otps = "_otps",
 	Superusers = "_superusers",
+	Blogs = "blogs",
+	Carts = "carts",
 	Categories = "categories",
 	Comments = "comments",
 	FeaturedCategories = "featuredCategories",
@@ -21,6 +23,7 @@ export enum Collections {
 	Products = "products",
 	PromotedProducts = "promotedProducts",
 	Series = "series",
+	Socials = "socials",
 	Users = "users",
 	Wishlists = "wishlists",
 }
@@ -96,10 +99,37 @@ export type SuperusersRecord = {
 	verified?: boolean
 }
 
+export type BlogsRecord = {
+	aboutAuthor?: string
+	author?: RecordIdString
+	category: string
+	content: HTMLString
+	cover: RecordIdString
+	created?: IsoDateString
+	id: string
+	images?: RecordIdString[]
+	publishedAt: IsoDateString
+	slug: string
+	summary: string
+	title: string
+	updated?: IsoDateString
+}
+
+export type CartsRecord = {
+	amount: number
+	completed?: boolean
+	created?: IsoDateString
+	id: string
+	products: RecordIdString
+	updated?: IsoDateString
+	users: RecordIdString
+}
+
 export type CategoriesRecord = {
 	created?: IsoDateString
 	description?: string
 	id: string
+	priority?: number
 	slug: string
 	thumbnail?: RecordIdString
 	title: string
@@ -182,6 +212,7 @@ export type PromotedProductsRecord = {
 	created?: IsoDateString
 	id: string
 	products: RecordIdString
+	tagLine: string
 	updated?: IsoDateString
 }
 
@@ -189,9 +220,27 @@ export type SeriesRecord = {
 	cover?: RecordIdString
 	created?: IsoDateString
 	id: string
+	priority?: number
 	slug: string
 	thumbnail?: RecordIdString
 	title: string
+	updated?: IsoDateString
+}
+
+export enum SocialsPlatformOptions {
+	"FACEBOOK" = "FACEBOOK",
+	"YOUTUBE" = "YOUTUBE",
+	"INSTAGRAM" = "INSTAGRAM",
+	"WHATSAPP" = "WHATSAPP",
+	"TIKTOK" = "TIKTOK",
+	"TWITTER" = "TWITTER",
+}
+export type SocialsRecord = {
+	created?: IsoDateString
+	id: string
+	image: string
+	link: string
+	platform: SocialsPlatformOptions
 	updated?: IsoDateString
 }
 
@@ -222,6 +271,8 @@ export type ExternalauthsResponse<Texpand = unknown> = Required<ExternalauthsRec
 export type MfasResponse<Texpand = unknown> = Required<MfasRecord> & BaseSystemFields<Texpand>
 export type OtpsResponse<Texpand = unknown> = Required<OtpsRecord> & BaseSystemFields<Texpand>
 export type SuperusersResponse<Texpand = unknown> = Required<SuperusersRecord> & AuthSystemFields<Texpand>
+export type BlogsResponse<Texpand = unknown> = Required<BlogsRecord> & BaseSystemFields<Texpand>
+export type CartsResponse<Texpand = unknown> = Required<CartsRecord> & BaseSystemFields<Texpand>
 export type CategoriesResponse<Texpand = unknown> = Required<CategoriesRecord> & BaseSystemFields<Texpand>
 export type CommentsResponse<Texpand = unknown> = Required<CommentsRecord> & BaseSystemFields<Texpand>
 export type FeaturedCategoriesResponse<Texpand = unknown> = Required<FeaturedCategoriesRecord> & BaseSystemFields<Texpand>
@@ -232,6 +283,7 @@ export type ImagesResponse<Texpand = unknown> = Required<ImagesRecord> & BaseSys
 export type ProductsResponse<Ttags = unknown, Texpand = unknown> = Required<ProductsRecord<Ttags>> & BaseSystemFields<Texpand>
 export type PromotedProductsResponse<Texpand = unknown> = Required<PromotedProductsRecord> & BaseSystemFields<Texpand>
 export type SeriesResponse<Texpand = unknown> = Required<SeriesRecord> & BaseSystemFields<Texpand>
+export type SocialsResponse<Texpand = unknown> = Required<SocialsRecord> & BaseSystemFields<Texpand>
 export type UsersResponse<Texpand = unknown> = Required<UsersRecord> & AuthSystemFields<Texpand>
 export type WishlistsResponse<Texpand = unknown> = Required<WishlistsRecord> & BaseSystemFields<Texpand>
 
@@ -243,6 +295,8 @@ export type CollectionRecords = {
 	_mfas: MfasRecord
 	_otps: OtpsRecord
 	_superusers: SuperusersRecord
+	blogs: BlogsRecord
+	carts: CartsRecord
 	categories: CategoriesRecord
 	comments: CommentsRecord
 	featuredCategories: FeaturedCategoriesRecord
@@ -253,6 +307,7 @@ export type CollectionRecords = {
 	products: ProductsRecord
 	promotedProducts: PromotedProductsRecord
 	series: SeriesRecord
+	socials: SocialsRecord
 	users: UsersRecord
 	wishlists: WishlistsRecord
 }
@@ -263,6 +318,8 @@ export type CollectionResponses = {
 	_mfas: MfasResponse
 	_otps: OtpsResponse
 	_superusers: SuperusersResponse
+	blogs: BlogsResponse
+	carts: CartsResponse
 	categories: CategoriesResponse
 	comments: CommentsResponse
 	featuredCategories: FeaturedCategoriesResponse
@@ -273,6 +330,7 @@ export type CollectionResponses = {
 	products: ProductsResponse
 	promotedProducts: PromotedProductsResponse
 	series: SeriesResponse
+	socials: SocialsResponse
 	users: UsersResponse
 	wishlists: WishlistsResponse
 }
@@ -286,6 +344,8 @@ export type TypedPocketBase = PocketBase & {
 	collection(idOrName: '_mfas'): RecordService<MfasResponse>
 	collection(idOrName: '_otps'): RecordService<OtpsResponse>
 	collection(idOrName: '_superusers'): RecordService<SuperusersResponse>
+	collection(idOrName: 'blogs'): RecordService<BlogsResponse>
+	collection(idOrName: 'carts'): RecordService<CartsResponse>
 	collection(idOrName: 'categories'): RecordService<CategoriesResponse>
 	collection(idOrName: 'comments'): RecordService<CommentsResponse>
 	collection(idOrName: 'featuredCategories'): RecordService<FeaturedCategoriesResponse>
@@ -296,6 +356,7 @@ export type TypedPocketBase = PocketBase & {
 	collection(idOrName: 'products'): RecordService<ProductsResponse>
 	collection(idOrName: 'promotedProducts'): RecordService<PromotedProductsResponse>
 	collection(idOrName: 'series'): RecordService<SeriesResponse>
+	collection(idOrName: 'socials'): RecordService<SocialsResponse>
 	collection(idOrName: 'users'): RecordService<UsersResponse>
 	collection(idOrName: 'wishlists'): RecordService<WishlistsResponse>
 }
