@@ -397,3 +397,63 @@ routerAdd("GET", "/api/homepage-lists", (c) => {
         categoryList
     })
 })
+
+routerAdd("GET", "/api/suggest-products/{id}", (c) => {
+    let id = c.request.pathValue("id");
+
+    const suggestedProducts = arrayOf(new DynamicModel({
+        id: '',
+        title: '',
+        tagLine: '',
+        slug: '',
+        sellingPrice: '',
+        discount: '',
+        summary: '',
+        productImageId: '',
+        productImageSource: '',
+        categoryTitle: '',
+        categorySlug: '',
+        seriesTitle: '',
+        seriesSlug: ''
+    }))
+
+    $app.db()
+        .newQuery(`
+            SELECT 
+                p.id,
+                p.title,
+                p.slug,
+                p.sellingPrice,
+                p.discount,
+                p.summary,
+                COALESCE(ct.title, '') AS categoryTitle,
+                COALESCE(ct.slug, '') AS categorySlug,
+                COALESCE(s.title, '') AS seriesTitle,
+                COALESCE(s.slug, '') AS seriesSlug,
+                COALESCE(pi.id, '') AS productImageId,
+                COALESCE(pi.source, '') AS productImageSource
+            FROM products p
+            LEFT JOIN images pi ON pi.id = REPLACE(p.images ->> 0, '"', '')
+            LEFT JOIN categories ct ON p.categories = ct.id 
+            LEFT JOIN series s ON p.series = s.id
+            WHERE p.categories = (SELECT ps.categories FROM products ps WHERE ps.id = {:id})
+            OR p.series = (SELECT ps.series FROM products ps WHERE ps.id = {:id})
+            OR EXISTS (
+                    SELECT 1 
+                    FROM json_each((SELECT ps.tags FROM products ps WHERE ps.id = {:id})) t
+                    WHERE p.tags LIKE '%' || t.value || '%'
+                )
+            AND p.inStock = 1
+            AND p.id != {:id}
+            ORDER BY p.priority DESC 
+            LIMIT 8
+        `)
+        .bind({
+            "id": id,
+        })
+        .all(suggestedProducts)
+
+    return c.json(200, {
+        suggestedProducts
+    })
+})
