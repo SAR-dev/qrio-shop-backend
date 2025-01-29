@@ -204,11 +204,13 @@ export type ProductsRecord<Ttags = unknown> = {
 	sellingPrice: number
 	series?: RecordIdString
 	shippingMethods: RecordIdString
+	sizeInCubicCm?: number
 	slug: string
 	summary?: string
 	tags?: null | Ttags
 	title: string
 	updated?: IsoDateString
+	weightInGm?: number
 }
 
 export type PromotedProductsRecord = {
@@ -223,8 +225,8 @@ export type QueriesRecord = {
 	answer?: string
 	created?: IsoDateString
 	id: string
+	products?: RecordIdString
 	question: string
-	source?: string
 	updated?: IsoDateString
 	users: RecordIdString
 }

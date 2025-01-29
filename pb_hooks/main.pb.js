@@ -40,7 +40,7 @@ routerAdd("GET", "/api/homepage", (c) => {
         productImageId: '',
         productImageSource: ''
     }))
-    
+
     $app.db()
         .newQuery(`
             WITH rankedProducts AS (
@@ -115,7 +115,7 @@ routerAdd("GET", "/api/homepage", (c) => {
         productImageId: '',
         productImageSource: ''
     }))
-    
+
     $app.db()
         .newQuery(`
             WITH rankedProducts AS (
@@ -399,7 +399,7 @@ routerAdd("GET", "/api/homepage-lists", (c) => {
 })
 
 routerAdd("GET", "/api/suggest-products/{id}", (c) => {
-    let id = c.request.pathValue("id");
+    let productId = c.request.pathValue("id");
 
     const suggestedProducts = arrayOf(new DynamicModel({
         id: '',
@@ -449,7 +449,7 @@ routerAdd("GET", "/api/suggest-products/{id}", (c) => {
             LIMIT 8
         `)
         .bind({
-            "id": id,
+            "id": productId,
         })
         .all(suggestedProducts)
 
@@ -458,14 +458,161 @@ routerAdd("GET", "/api/suggest-products/{id}", (c) => {
     })
 })
 
-routerAdd("POST", "/api/add-to-cart", (c) => {
-    let userId = c.requestInfo().auth?.id
+routerAdd("GET", "/api/wishlist", (c) => {
+    const userId = c.requestInfo().auth?.id
+    if(!userId) throw ForbiddenError();
 
-    // get payload with product id
+    const wishedProducts = arrayOf(new DynamicModel({
+        id: '',
+        title: '',
+        tagLine: '',
+        slug: '',
+        sellingPrice: '',
+        discount: '',
+        summary: '',
+        productImageId: '',
+        productImageSource: '',
+        categoryTitle: '',
+        categorySlug: '',
+        seriesTitle: '',
+        seriesSlug: ''
+    }))
 
-    // get cart id and product id
+    $app.db()
+        .newQuery(`
+            SELECT 
+                p.id,
+                p.title,
+                p.slug,
+                p.sellingPrice,
+                p.discount,
+                p.summary,
+                COALESCE(ct.title, '') AS categoryTitle,
+                COALESCE(ct.slug, '') AS categorySlug,
+                COALESCE(s.title, '') AS seriesTitle,
+                COALESCE(s.slug, '') AS seriesSlug,
+                COALESCE(pi.id, '') AS productImageId,
+                COALESCE(pi.source, '') AS productImageSource
+            FROM wishlists w
+            JOIN products p ON w.products = p.id
+            LEFT JOIN images pi ON pi.id = REPLACE(p.images ->> 0, '"', '')
+            LEFT JOIN categories ct ON p.categories = ct.id 
+            LEFT JOIN series s ON p.series = s.id
+            WHERE w.users = {:id}
+            ORDER BY w.created DESC
+        `)
+        .bind({
+            "id": userId,
+        })
+        .all(wishedProducts)
 
-    // if exists increase amount
+    return c.json(200, {
+        wishedProducts
+    })
+})
 
-    // if does not exist create with amount 1
+routerAdd("GET", "/api/cart", (c) => {
+    const userId = c.requestInfo().auth?.id
+    if(!userId) throw ForbiddenError();
+
+    const cartProducts = arrayOf(new DynamicModel({
+        cartId: '',
+        productId: '',
+        productTitle: '',
+        productSlug: '',
+        productAmount: '',
+        productSellingPrice: '',
+        productDiscount: '',
+        productImageId: '',
+        productImageSource: '',
+        categoryTitle: '',
+        categorySlug: '',
+        seriesTitle: '',
+        seriesSlug: ''
+    }))
+
+    $app.db()
+        .newQuery(`
+            SELECT 
+                c.id AS cartId,
+                p.id AS productId,
+                c.amount AS productAmount,
+                p.title AS productTitle,
+                p.slug AS productSlug, 
+                p.sellingPrice AS productSellingPrice,
+                p.discount AS productDiscount,
+                COALESCE(pi.id, '') AS productImageId,
+                COALESCE(pi.source, '') AS productImageSource,
+                COALESCE(ct.title, '') AS categoryTitle,
+                COALESCE(ct.slug, '') AS categorySlug,
+                COALESCE(s.title, '') AS seriesTitle,
+                COALESCE(s.slug, '') AS seriesSlug
+            FROM carts c 
+            JOIN products p ON p.id = c.products 
+            LEFT JOIN categories ct ON p.categories = c.id
+            LEFT JOIN series s ON p.series = s.id
+            LEFT JOIN images pi ON pi.id = REPLACE(p.images ->> 0, '"', '')
+            WHERE c.completed = 0
+            AND c.users = {:id}
+            ORDER BY c.updated DESC
+        `)
+        .bind({
+            "id": userId,
+        })
+        .all(cartProducts)
+
+    return c.json(200, {
+        cartProducts
+    })
+})
+
+routerAdd("POST", "/api/cart", (c) => {
+    const userId = c.requestInfo().auth?.id
+    if(!userId) throw ForbiddenError()
+
+    const { productId, amount } = c.requestInfo().body
+
+    // get cart id and product id list
+    const pendingCarts = arrayOf(new DynamicModel({
+        cartId: '',
+        productId: ''
+    }))
+
+    $app.db()
+        .newQuery(`
+            SELECT 
+                c.id AS cartId,
+                c.products AS productId
+            FROM carts c 
+            WHERE c.completed = 0
+            AND c.users = {:id}
+        `)
+        .bind({
+            "id": userId,
+        })
+        .all(pendingCarts)
+
+    // check if product exists in cart
+    const foundCart = pendingCarts.find(e => e.productId == productId)
+    
+    $app.runInTransaction((txDao) => {
+        // if product exists update the data
+        if (foundCart) {
+            const record = txDao.findRecordById("carts", foundCart.cartId)
+            record.set("amount", (amount ? (record.publicExport().amount + amount) : (record.publicExport().amount + 1)))
+            txDao.save(record)
+        } else {
+        // if product does not exist create the data
+            const collection = txDao.findCollectionByNameOrId("carts")
+            const record = new Record(collection)
+            record.set("products", productId)
+            record.set("amount", (amount ?? 1))
+            record.set("users", userId)
+            txDao.save(record)
+        }
+    })
+
+    return c.json(200, {
+        message: "Product added to cart."
+    })
 })
