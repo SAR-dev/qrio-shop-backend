@@ -562,13 +562,13 @@ routerAdd("GET", "/api/cart", (c) => {
     if (!userId) throw ForbiddenError();
 
     const cartProducts = arrayOf(new DynamicModel({
+        id: '',
+        title: '',
+        slug: '',
+        amount: '',
+        sellingPrice: '',
+        discount: '',
         cartId: '',
-        productId: '',
-        productTitle: '',
-        productSlug: '',
-        productAmount: '',
-        productSellingPrice: '',
-        productDiscount: '',
         productImageId: '',
         productImageSource: '',
         categoryTitle: '',
@@ -580,13 +580,13 @@ routerAdd("GET", "/api/cart", (c) => {
     $app.db()
         .newQuery(`
             SELECT 
+                p.id,
+                c.amount,
+                p.title,
+                p.slug, 
+                p.sellingPrice,
+                p.discount,
                 c.id AS cartId,
-                p.id AS productId,
-                c.amount AS productAmount,
-                p.title AS productTitle,
-                p.slug AS productSlug, 
-                p.sellingPrice AS productSellingPrice,
-                p.discount AS productDiscount,
                 COALESCE(pi.id, '') AS productImageId,
                 COALESCE(pi.source, '') AS productImageSource,
                 COALESCE(ct.title, '') AS categoryTitle,
