@@ -460,7 +460,7 @@ routerAdd("GET", "/api/suggest-products/{id}", (c) => {
 
 routerAdd("GET", "/api/wishlist", (c) => {
     const userId = c.requestInfo().auth?.id
-    if(!userId) throw ForbiddenError();
+    if (!userId) throw ForbiddenError();
 
     const wishedProducts = arrayOf(new DynamicModel({
         id: '',
@@ -511,9 +511,55 @@ routerAdd("GET", "/api/wishlist", (c) => {
     })
 })
 
+routerAdd("POST", "/api/wishlist", (c) => {
+    const userId = c.requestInfo().auth?.id
+    if (!userId) throw ForbiddenError()
+
+    const { productId } = c.requestInfo().body
+    if (!productId) throw ForbiddenError()
+
+    // check if wishlist exists
+    const wishedProducts = arrayOf(new DynamicModel({
+        id: ''
+    }))
+
+    $app.db()
+        .newQuery(`
+            SELECT 
+                w.id
+            FROM wishlists w
+            WHERE w.users = {:userId}
+            AND w.products = {:productId}
+        `)
+        .bind({
+            "productId": productId,
+            "userId": userId
+        })
+        .all(wishedProducts)
+
+    $app.runInTransaction((txDao) => {
+        if(wishedProducts.length > 0){
+        // if exists delete
+            const record = txDao.findRecordById("wishlists", wishedProducts[0].id)
+            txDao.delete(record)
+        } else {
+        // if does not exist add
+            const collection = txDao.findCollectionByNameOrId("wishlists")
+            const record = new Record(collection)
+            record.set("products", productId)
+            record.set("users", userId)
+            txDao.save(record)
+        }  
+    })
+
+    return c.json(200, {
+        message: "Product added to wishlist."
+    })
+})
+
 routerAdd("GET", "/api/cart", (c) => {
     const userId = c.requestInfo().auth?.id
-    if(!userId) throw ForbiddenError();
+    if (!userId) throw ForbiddenError();
 
     const cartProducts = arrayOf(new DynamicModel({
         cartId: '',
@@ -568,9 +614,10 @@ routerAdd("GET", "/api/cart", (c) => {
 
 routerAdd("POST", "/api/cart", (c) => {
     const userId = c.requestInfo().auth?.id
-    if(!userId) throw ForbiddenError()
+    if (!userId) throw ForbiddenError()
 
     const { productId, amount } = c.requestInfo().body
+    if (!productId || !amount) throw ForbiddenError()
 
     // get cart id and product id list
     const pendingCarts = arrayOf(new DynamicModel({
@@ -594,19 +641,23 @@ routerAdd("POST", "/api/cart", (c) => {
 
     // check if product exists in cart
     const foundCart = pendingCarts.find(e => e.productId == productId)
-    
+
     $app.runInTransaction((txDao) => {
-        // if product exists update the data
-        if (foundCart) {
+        if (amount == 0) {
+            // if amount is 0 delete
             const record = txDao.findRecordById("carts", foundCart.cartId)
-            record.set("amount", (amount ? (record.publicExport().amount + amount) : (record.publicExport().amount + 1)))
+            txDao.delete(record)
+        } else if (foundCart) {
+            // if product exists update the data
+            const record = txDao.findRecordById("carts", foundCart.cartId)
+            record.set("amount", record.publicExport().amount + amount)
             txDao.save(record)
         } else {
-        // if product does not exist create the data
+            // if product does not exist create the data
             const collection = txDao.findCollectionByNameOrId("carts")
             const record = new Record(collection)
             record.set("products", productId)
-            record.set("amount", (amount ?? 1))
+            record.set("amount", amount)
             record.set("users", userId)
             txDao.save(record)
         }
