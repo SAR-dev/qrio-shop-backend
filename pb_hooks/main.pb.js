@@ -537,6 +537,8 @@ routerAdd("POST", "/api/wishlist", (c) => {
         })
         .all(wishedProducts)
 
+    let added = false;
+
     $app.runInTransaction((txDao) => {
         if(wishedProducts.length > 0){
         // if exists delete
@@ -549,11 +551,12 @@ routerAdd("POST", "/api/wishlist", (c) => {
             record.set("products", productId)
             record.set("users", userId)
             txDao.save(record)
+            added = true
         }  
     })
 
     return c.json(200, {
-        message: "Product added to wishlist."
+        message: added ? "Product added to wishlist." : "Product removed from wishlist."
     })
 })
 
@@ -600,7 +603,7 @@ routerAdd("GET", "/api/cart", (c) => {
             LEFT JOIN images pi ON pi.id = REPLACE(p.images ->> 0, '"', '')
             WHERE c.completed = 0
             AND c.users = {:id}
-            ORDER BY c.updated DESC
+            ORDER BY c.id DESC
         `)
         .bind({
             "id": userId,
@@ -616,8 +619,8 @@ routerAdd("POST", "/api/cart", (c) => {
     const userId = c.requestInfo().auth?.id
     if (!userId) throw ForbiddenError()
 
-    const { productId, amount } = c.requestInfo().body
-    if (!productId || !amount) throw ForbiddenError()
+    const { productId, amount = 0 } = c.requestInfo().body
+    if (!productId) throw ForbiddenError()
 
     // get cart id and product id list
     const pendingCarts = arrayOf(new DynamicModel({
@@ -650,7 +653,7 @@ routerAdd("POST", "/api/cart", (c) => {
         } else if (foundCart) {
             // if product exists update the data
             const record = txDao.findRecordById("carts", foundCart.cartId)
-            record.set("amount", record.publicExport().amount + amount)
+            record.set("amount", amount)
             txDao.save(record)
         } else {
             // if product does not exist create the data
