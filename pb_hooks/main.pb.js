@@ -603,7 +603,7 @@ routerAdd("POST", "/api/wishlist", (c) => {
     })
 
     return c.json(200, {
-        message: added ? "Product added to wishlist." : "Product removed from wishlist."
+        added: added ? 1 : 0
     })
 })
 

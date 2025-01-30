@@ -275,10 +275,12 @@ export type PromotedProductsRecord = {
 
 export type QueriesRecord = {
 	answer?: string
+	contactNo?: string
 	created?: IsoDateString
 	id: string
 	products?: RecordIdString
 	question: string
+	resolved?: boolean
 	updated?: IsoDateString
 	users: RecordIdString
 }
