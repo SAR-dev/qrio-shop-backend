@@ -794,3 +794,21 @@ routerAdd("POST", "/api/checkout", (c) => {
         ref: ref
     })
 })
+
+routerAdd("POST", "/api/query", (c) => {
+    const userId = c.requestInfo().auth?.id
+    if (!userId) throw ForbiddenError()
+
+    const { question, contactNo, productId } = c.requestInfo().body
+    if (!productId || !question) throw ForbiddenError()
+
+    const collection = $app.findCollectionByNameOrId("queries")
+    const record = new Record(collection)
+    record.set("question", question)
+    record.set("contactNo", contactNo)
+    record.set("users", userId)
+    record.set("products", productId)
+    $app.save(record)
+
+    return c.json(200)
+})
