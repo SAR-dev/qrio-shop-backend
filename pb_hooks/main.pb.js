@@ -399,7 +399,7 @@ routerAdd("GET", "/api/homepage-lists", (c) => {
 })
 
 routerAdd("GET", "/api/suggest-products/{id}", (c) => {
-    let productId = c.request.pathValue("id");
+    const productId = c.request.pathValue("id");
 
     const suggestedProducts = arrayOf(new DynamicModel({
         id: '',
@@ -455,6 +455,53 @@ routerAdd("GET", "/api/suggest-products/{id}", (c) => {
 
     return c.json(200, {
         suggestedProducts
+    })
+})
+
+routerAdd("GET", "/api/invoice-products/{id}", (c) => {
+    const invoiceId = c.request.pathValue("id");
+
+    const userId = c.requestInfo().auth?.id
+    if (!userId) throw ForbiddenError();
+
+    const invoiceProducts = arrayOf(new DynamicModel({
+        id: '',
+        title: '',
+        slug: '',
+        amount: '',
+        sellingPrice: '',
+        discount: '',
+        productImageId: '',
+        productImageSource: ''
+    }))
+
+    $app.db()
+        .newQuery(`
+            SELECT 
+                p.id,
+                ip.amount,
+                p.title,
+                p.slug, 
+                ip.sellingPrice ,
+                ip.discount,
+                COALESCE(pi.id, '') AS productImageId,
+                COALESCE(pi.source, '') AS productImageSource
+            FROM invoiceProducts ip 
+            JOIN invoices i ON ip.invoices = i.id
+            JOIN products p ON p.id =ip.products 
+            LEFT JOIN images pi ON pi.id = REPLACE(p.images ->> 0, '"', '')
+            WHERE i.users = {:userId} 
+            AND ip.invoices = {:invoiceId}
+            ORDER BY p.id DESC
+        `)
+        .bind({
+            "userId": userId,
+            "invoiceId": invoiceId
+        })
+        .all(invoiceProducts)
+
+    return c.json(200, {
+        invoiceProducts
     })
 })
 
@@ -573,11 +620,7 @@ routerAdd("GET", "/api/cart", (c) => {
         discount: '',
         cartId: '',
         productImageId: '',
-        productImageSource: '',
-        categoryTitle: '',
-        categorySlug: '',
-        seriesTitle: '',
-        seriesSlug: ''
+        productImageSource: ''
     }))
 
     $app.db()
@@ -591,15 +634,9 @@ routerAdd("GET", "/api/cart", (c) => {
                 p.discount,
                 c.id AS cartId,
                 COALESCE(pi.id, '') AS productImageId,
-                COALESCE(pi.source, '') AS productImageSource,
-                COALESCE(ct.title, '') AS categoryTitle,
-                COALESCE(ct.slug, '') AS categorySlug,
-                COALESCE(s.title, '') AS seriesTitle,
-                COALESCE(s.slug, '') AS seriesSlug
+                COALESCE(pi.source, '') AS productImageSource
             FROM carts c 
             JOIN products p ON p.id = c.products 
-            LEFT JOIN categories ct ON p.categories = c.id
-            LEFT JOIN series s ON p.series = s.id
             LEFT JOIN images pi ON pi.id = REPLACE(p.images ->> 0, '"', '')
             WHERE c.users = {:id}
             ORDER BY c.id DESC

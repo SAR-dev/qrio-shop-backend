@@ -214,11 +214,14 @@ export type InvoicesRecord = {
 	contactNo1?: string
 	contactNo2?: string
 	created?: IsoDateString
+	deliveredAt?: IsoDateString
 	id: string
 	payments?: RecordIdString[]
 	productsFee: number
 	receiverAddress: string
 	receiverName: string
+	receiverNote?: string
+	ref: string
 	shippingCompany?: string
 	shippingFee?: number
 	status: InvoicesStatusOptions
