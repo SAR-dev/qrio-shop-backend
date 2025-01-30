@@ -668,3 +668,92 @@ routerAdd("POST", "/api/cart", (c) => {
         message: "Product added to cart."
     })
 })
+
+routerAdd("POST", "/api/checkout", (c) => {
+    const userId = c.requestInfo().auth?.id
+    if (!userId) throw ForbiddenError()
+
+    const { receiverName, contactNo1, contactNo2, receiverNote, receiverAddress } = c.requestInfo().body
+    if (!receiverName || (!contactNo1 && !contactNo2) || !receiverAddress ) throw ForbiddenError()
+
+    const shippingFee = 100;
+    const taxFee = 0;
+    const status = 'CREATED';
+    const ref = (Date.now().toString(36) + Math.random().toString(36).slice(2, 10)).toUpperCase();
+
+    const cartProducts = arrayOf(new DynamicModel({
+        cartId: '',
+        id: '',
+        sellingPrice: '',
+        discount: '',
+        amount: ''
+    }))
+
+    $app.db()
+        .newQuery(`
+            SELECT 
+                c.id AS cartId,
+                p.id,
+                p.sellingPrice,
+                p.discount,
+                c.amount
+            FROM carts c 
+            JOIN products p ON c.products = p.id
+            WHERE c.users = {:id}
+        `)
+        .bind({
+            "id": userId,
+        })
+        .all(cartProducts)
+
+    const productsFee = cartProducts.map(e => (Number(e.sellingPrice) - Number(e.discount)) * Number(e.amount)).reduce((a, b) => a + b, 0)
+    
+    $app.runInTransaction((txDao) => {
+        // create invoice
+        const invoiceCollection = txDao.findCollectionByNameOrId("invoices")
+        const invoiceRecord = new Record(invoiceCollection)
+        invoiceRecord.set("ref", ref)
+        invoiceRecord.set("users", userId)
+        invoiceRecord.set("receiverName", receiverName)
+        invoiceRecord.set("contactNo1", contactNo1)
+        invoiceRecord.set("contactNo2", contactNo2)
+        invoiceRecord.set("receiverNote", receiverNote)
+        invoiceRecord.set("receiverAddress", receiverAddress)
+        invoiceRecord.set("productsFee", productsFee)
+        invoiceRecord.set("shippingFee", shippingFee)
+        invoiceRecord.set("taxFee", taxFee)
+        invoiceRecord.set("totalFee", (Number(productsFee) + Number(shippingFee) + Number(taxFee)))
+        invoiceRecord.set("status", status)
+        txDao.save(invoiceRecord)
+
+        // get invoice id by ref
+        const invoice = txDao.findFirstRecordByFilter(
+            "invoices",
+            "ref = {:ref}",
+            { "ref": ref },
+        )
+        const invoiceId = invoice.publicExport().id
+
+        // add invoice products
+        cartProducts.forEach((product) => {
+            const inPrCollection = txDao.findCollectionByNameOrId("invoiceProducts")
+            const inPrRecord = new Record(inPrCollection)
+            inPrRecord.set("invoices", invoiceId)
+            inPrRecord.set("products", product.id)
+            inPrRecord.set("sellingPrice", Number(product.sellingPrice))
+            inPrRecord.set("discount", Number(product.discount))
+            inPrRecord.set("amount", Number(product.amount))
+            txDao.save(inPrRecord)
+        })
+
+        // remove products from cart
+        cartProducts.forEach((product) => {
+            const cartRecord = txDao.findRecordById("carts", product.cartId)
+            txDao.delete(cartRecord)
+        })
+    })
+
+    return c.json(200, {
+        ref: ref
+    })
+})
