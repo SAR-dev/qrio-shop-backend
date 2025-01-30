@@ -122,7 +122,6 @@ export type BlogsRecord = {
 
 export type CartsRecord = {
 	amount: number
-	completed?: boolean
 	created?: IsoDateString
 	id: string
 	products: RecordIdString

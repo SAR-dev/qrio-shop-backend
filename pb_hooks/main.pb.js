@@ -601,8 +601,7 @@ routerAdd("GET", "/api/cart", (c) => {
             LEFT JOIN categories ct ON p.categories = c.id
             LEFT JOIN series s ON p.series = s.id
             LEFT JOIN images pi ON pi.id = REPLACE(p.images ->> 0, '"', '')
-            WHERE c.completed = 0
-            AND c.users = {:id}
+            WHERE c.users = {:id}
             ORDER BY c.id DESC
         `)
         .bind({
@@ -634,8 +633,7 @@ routerAdd("POST", "/api/cart", (c) => {
                 c.id AS cartId,
                 c.products AS productId
             FROM carts c 
-            WHERE c.completed = 0
-            AND c.users = {:id}
+            WHERE c.users = {:id}
         `)
         .bind({
             "id": userId,
