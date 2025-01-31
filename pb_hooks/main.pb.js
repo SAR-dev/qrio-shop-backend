@@ -802,34 +802,12 @@ routerAdd("POST", "/api/order-cancel", (c) => {
     const { invoiceId } = c.requestInfo().body
     if (!invoiceId) throw ForbiddenError()
 
-    const invoiceProducts = arrayOf(new DynamicModel({
-        id: ''
-    }))
-
-    $app.db()
-        .newQuery(`
-            SELECT 
-                ip.id
-            FROM invoiceProducts ip
-            WHERE ip.invoices = {:id}
-        `)
-        .bind({
-            "id": invoiceId,
-        })
-        .all(invoiceProducts)
-
     $app.runInTransaction((txDao) => {
         const invoiceRecord = txDao.findRecordById("invoices", invoiceId)
-        if(invoiceRecord.publicExport().users != userId) throw ForbiddenError()
-        if(invoiceRecord.publicExport().status != "CREATED") throw ForbiddenError()
-        
-        
-        invoiceProducts.forEach((product) => {
-            const invoiceProductRecord = txDao.findRecordById("invoiceProducts", product.id)
-            txDao.delete(invoiceProductRecord)
-        })
-
-        txDao.delete(invoiceRecord)
+        if (invoiceRecord.publicExport().users != userId) throw ForbiddenError()
+        if (invoiceRecord.publicExport().status != "CREATED") throw ForbiddenError()
+        invoiceRecord.set("status", "CANCELLED")
+        txDao.save(invoiceRecord)
     })
 
     return c.json(200)
@@ -851,4 +829,110 @@ routerAdd("POST", "/api/query", (c) => {
     $app.save(record)
 
     return c.json(200)
+})
+
+routerAdd("GET", "/api/filter-fields", (c) => {
+    const seriesList = arrayOf(new DynamicModel({
+        id: '',
+        title: ''
+    }))
+
+    $app.db()
+        .newQuery(`
+            SELECT 
+                s.id,
+                s.title
+            FROM series s
+            ORDER BY s.title ASC
+        `)
+        .all(seriesList)
+
+    const categoryList = arrayOf(new DynamicModel({
+        id: '',
+        title: ''
+    }))
+
+    $app.db()
+        .newQuery(`
+            SELECT 
+                c.id,
+                c.title
+            FROM categories c
+            ORDER BY c.title ASC
+        `)
+        .all(categoryList)
+
+    return c.json(200, {
+        seriesList,
+        categoryList
+    })
+})
+
+routerAdd("GET", "/api/products", (c) => {
+    const page_size = c.request.url.query().get("pageSize") ?? 24;
+    const page_no = c.request.url.query().get("pageNo") ?? 1;
+    const seriesId = c.request.url.query().get("seriesId")
+    const categoryId = c.request.url.query().get("categoryId")
+
+    const seriesFilter = seriesId ? `series = "${seriesId}"` : ""
+    const categoryFilter = categoryId ? `categories = "${categoryId}"` : ""
+    const filters = [seriesFilter, categoryFilter]
+
+    const filterObj = {}
+    if(seriesFilter.length > 0) filterObj["series"] = seriesId
+    if(categoryFilter.length > 0) filterObj["categories"] = categoryId
+
+    const totalItems = $app.countRecords("products", 
+        $dbx.hashExp({...filterObj})
+    )
+    const pageSize = Number(page_size) > 0 ? Number(page_size) : 20;
+    const pageNo = Number(page_no) > 0 ? Number(page_no) : 1;
+
+    const filteredProducts = arrayOf(new DynamicModel({
+        id: '',
+        title: '',
+        tagLine: '',
+        slug: '',
+        sellingPrice: '',
+        discount: '',
+        summary: '',
+        productImageId: '',
+        productImageSource: '',
+        categoryTitle: '',
+        categorySlug: '',
+        seriesTitle: '',
+        seriesSlug: ''
+    }))
+
+    $app.db()
+        .newQuery(`
+            SELECT 
+                p.id,
+                p.title,
+                p.slug,
+                p.sellingPrice,
+                p.discount,
+                p.summary,
+                COALESCE(ct.title, '') AS categoryTitle,
+                COALESCE(ct.slug, '') AS categorySlug,
+                COALESCE(s.title, '') AS seriesTitle,
+                COALESCE(s.slug, '') AS seriesSlug,
+                COALESCE(pi.id, '') AS productImageId,
+                COALESCE(pi.source, '') AS productImageSource
+            FROM products p
+            LEFT JOIN images pi ON pi.id = REPLACE(p.images ->> 0, '"', '')
+            LEFT JOIN categories ct ON p.categories = ct.id 
+            LEFT JOIN series s ON p.series = s.id
+            ${filters.length > 0 ? "WHERE " + filters.filter(e => e.length > 0).join(" AND ") : ""}
+            LIMIT ${Number(pageSize)} OFFSET ${(Number(pageNo) - 1) * Number(pageSize)}
+        `)
+        .all(filteredProducts)
+
+    return c.json(200, {
+        pageNo: pageNo,
+        pageSize: pageSize,
+        totalPages: Math.ceil(totalItems / pageSize),
+        totalItems: totalItems,
+        items: filteredProducts
+    })
 })
