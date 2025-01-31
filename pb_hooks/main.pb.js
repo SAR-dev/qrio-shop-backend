@@ -869,8 +869,8 @@ routerAdd("GET", "/api/filter-fields", (c) => {
 })
 
 routerAdd("GET", "/api/products", (c) => {
-    const page_size = c.request.url.query().get("pageSize") ?? 24;
-    const page_no = c.request.url.query().get("pageNo") ?? 1;
+    let pageSize = c.request.url.query().get("pageSize");
+    let pageNo = c.request.url.query().get("pageNo");
     const seriesId = c.request.url.query().get("seriesId")
     const categoryId = c.request.url.query().get("categoryId")
 
@@ -878,15 +878,25 @@ routerAdd("GET", "/api/products", (c) => {
     const categoryFilter = categoryId ? `categories = "${categoryId}"` : ""
     const filters = [seriesFilter, categoryFilter]
 
-    const filterObj = {}
-    if(seriesFilter.length > 0) filterObj["series"] = seriesId
-    if(categoryFilter.length > 0) filterObj["categories"] = categoryId
+    pageSize = Number(pageSize) > 0 ? Number(pageSize) : 20;
+    pageNo = Number(pageNo) > 0 ? Number(pageNo) : 1;
 
-    const totalItems = $app.countRecords("products", 
-        $dbx.hashExp({...filterObj})
-    )
-    const pageSize = Number(page_size) > 0 ? Number(page_size) : 20;
-    const pageNo = Number(page_no) > 0 ? Number(page_no) : 1;
+    const counted = new DynamicModel({
+        totalItems: ''
+    })
+
+    $app.db()
+        .newQuery(`
+            SELECT 
+                COALESCE(count(*), 0) AS totalItems
+            FROM products p
+            LEFT JOIN categories ct ON p.categories = ct.id 
+            LEFT JOIN series s ON p.series = s.id
+            ${filters.filter(e => e.length > 0).length > 0 ? "WHERE " + filters.filter(e => e.length > 0).join(" AND ") : ""}
+        `)
+        .one(counted)
+
+    const totalItems = Number(counted.totalItems)
 
     const filteredProducts = arrayOf(new DynamicModel({
         id: '',
@@ -923,7 +933,8 @@ routerAdd("GET", "/api/products", (c) => {
             LEFT JOIN images pi ON pi.id = REPLACE(p.images ->> 0, '"', '')
             LEFT JOIN categories ct ON p.categories = ct.id 
             LEFT JOIN series s ON p.series = s.id
-            ${filters.length > 0 ? "WHERE " + filters.filter(e => e.length > 0).join(" AND ") : ""}
+            ${filters.filter(e => e.length > 0).length > 0 ? "WHERE " + filters.filter(e => e.length > 0).join(" AND ") : ""}
+            ORDER BY p.title ASC
             LIMIT ${Number(pageSize)} OFFSET ${(Number(pageNo) - 1) * Number(pageSize)}
         `)
         .all(filteredProducts)
@@ -933,6 +944,8 @@ routerAdd("GET", "/api/products", (c) => {
         pageSize: pageSize,
         totalPages: Math.ceil(totalItems / pageSize),
         totalItems: totalItems,
+        hasNext: pageNo < Math.ceil(totalItems / pageSize),
+        hasPrev: pageNo > 1,
         items: filteredProducts
     })
 })
