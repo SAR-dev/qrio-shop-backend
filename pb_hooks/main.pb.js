@@ -587,19 +587,19 @@ routerAdd("POST", "/api/wishlist", (c) => {
     let added = false;
 
     $app.runInTransaction((txDao) => {
-        if(wishedProducts.length > 0){
-        // if exists delete
+        if (wishedProducts.length > 0) {
+            // if exists delete
             const record = txDao.findRecordById("wishlists", wishedProducts[0].id)
             txDao.delete(record)
         } else {
-        // if does not exist add
+            // if does not exist add
             const collection = txDao.findCollectionByNameOrId("wishlists")
             const record = new Record(collection)
             record.set("products", productId)
             record.set("users", userId)
             txDao.save(record)
             added = true
-        }  
+        }
     })
 
     return c.json(200, {
@@ -711,7 +711,7 @@ routerAdd("POST", "/api/checkout", (c) => {
     if (!userId) throw ForbiddenError()
 
     const { receiverName, contactNo1, contactNo2, receiverNote, receiverAddress } = c.requestInfo().body
-    if (!receiverName || (!contactNo1 && !contactNo2) || !receiverAddress ) throw ForbiddenError()
+    if (!receiverName || (!contactNo1 && !contactNo2) || !receiverAddress) throw ForbiddenError()
 
     const shippingFee = 100;
     const taxFee = 0;
@@ -744,7 +744,7 @@ routerAdd("POST", "/api/checkout", (c) => {
         .all(cartProducts)
 
     const productsFee = cartProducts.map(e => (Number(e.sellingPrice) - Number(e.discount)) * Number(e.amount)).reduce((a, b) => a + b, 0)
-    
+
     $app.runInTransaction((txDao) => {
         // create invoice
         const invoiceCollection = txDao.findCollectionByNameOrId("invoices")
@@ -793,6 +793,46 @@ routerAdd("POST", "/api/checkout", (c) => {
     return c.json(200, {
         ref: ref
     })
+})
+
+routerAdd("POST", "/api/order-cancel", (c) => {
+    const userId = c.requestInfo().auth?.id
+    if (!userId) throw ForbiddenError()
+
+    const { invoiceId } = c.requestInfo().body
+    if (!invoiceId) throw ForbiddenError()
+
+    const invoiceProducts = arrayOf(new DynamicModel({
+        id: ''
+    }))
+
+    $app.db()
+        .newQuery(`
+            SELECT 
+                ip.id
+            FROM invoiceProducts ip
+            WHERE ip.invoices = {:id}
+        `)
+        .bind({
+            "id": invoiceId,
+        })
+        .all(invoiceProducts)
+
+    $app.runInTransaction((txDao) => {
+        const invoiceRecord = txDao.findRecordById("invoices", invoiceId)
+        if(invoiceRecord.publicExport().users != userId) throw ForbiddenError()
+        if(invoiceRecord.publicExport().status != "CREATED") throw ForbiddenError()
+        
+        
+        invoiceProducts.forEach((product) => {
+            const invoiceProductRecord = txDao.findRecordById("invoiceProducts", product.id)
+            txDao.delete(invoiceProductRecord)
+        })
+
+        txDao.delete(invoiceRecord)
+    })
+
+    return c.json(200)
 })
 
 routerAdd("POST", "/api/query", (c) => {
