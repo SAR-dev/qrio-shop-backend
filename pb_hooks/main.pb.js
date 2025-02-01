@@ -873,10 +873,12 @@ routerAdd("GET", "/api/products", (c) => {
     let pageNo = c.request.url.query().get("pageNo");
     const seriesId = c.request.url.query().get("seriesId")
     const categoryId = c.request.url.query().get("categoryId")
+    const search = c.request.url.query().get("search").split(" ").filter(e => e.trim().length > 0)
 
-    const seriesFilter = seriesId ? `series = "${seriesId}"` : ""
-    const categoryFilter = categoryId ? `categories = "${categoryId}"` : ""
-    const filters = [seriesFilter, categoryFilter]
+    const seriesFilter = seriesId ? `(p.series = "${seriesId}")` : ""
+    const categoryFilter = categoryId ? `(p.categories = "${categoryId}")` : ""
+    const searchFilter = search.length > 0 ? `( ${search.map(e => `LOWER(p.title) LIKE '%${e.toLowerCase()}%' OR LOWER(p.summary) LIKE '%${e.toLowerCase()}%' OR LOWER(p.description) LIKE '%${e.toLowerCase()}%'`).join(" OR ")} )` : ""
+    const filters = [seriesFilter, categoryFilter, searchFilter]
 
     pageSize = Number(pageSize) > 0 ? Number(pageSize) : 20;
     pageNo = Number(pageNo) > 0 ? Number(pageNo) : 1;
@@ -949,3 +951,5 @@ routerAdd("GET", "/api/products", (c) => {
         items: filteredProducts
     })
 })
+
+// SELECT * FROM products WHERE description GLOB '*bad*' OR description GLOB '*dog*';
