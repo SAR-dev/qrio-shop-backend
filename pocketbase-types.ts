@@ -27,7 +27,6 @@ export enum Collections {
 	PromotedProducts = "promotedProducts",
 	Queries = "queries",
 	Series = "series",
-	ShippingMethods = "shippingMethods",
 	Socials = "socials",
 	Users = "users",
 	Wishlists = "wishlists",
@@ -209,6 +208,7 @@ export enum InvoicesStatusOptions {
 	"PROCESSIING" = "PROCESSIING",
 	"SHIPPED" = "SHIPPED",
 	"DELIVERED" = "DELIVERED",
+	"CANCELLED" = "CANCELLED",
 }
 export type InvoicesRecord = {
 	contactNo1?: string
@@ -255,7 +255,6 @@ export type ProductsRecord<Ttags = unknown> = {
 	priority: number
 	sellingPrice: number
 	series?: RecordIdString
-	shippingMethods: RecordIdString
 	sizeInCubicCm?: number
 	slug: string
 	summary?: string
@@ -292,14 +291,6 @@ export type SeriesRecord = {
 	priority?: number
 	slug: string
 	thumbnail?: RecordIdString
-	title: string
-	updated?: IsoDateString
-}
-
-export type ShippingMethodsRecord = {
-	created?: IsoDateString
-	description?: HTMLString
-	id: string
 	title: string
 	updated?: IsoDateString
 }
@@ -364,7 +355,6 @@ export type ProductsResponse<Ttags = unknown, Texpand = unknown> = Required<Prod
 export type PromotedProductsResponse<Texpand = unknown> = Required<PromotedProductsRecord> & BaseSystemFields<Texpand>
 export type QueriesResponse<Texpand = unknown> = Required<QueriesRecord> & BaseSystemFields<Texpand>
 export type SeriesResponse<Texpand = unknown> = Required<SeriesRecord> & BaseSystemFields<Texpand>
-export type ShippingMethodsResponse<Texpand = unknown> = Required<ShippingMethodsRecord> & BaseSystemFields<Texpand>
 export type SocialsResponse<Texpand = unknown> = Required<SocialsRecord> & BaseSystemFields<Texpand>
 export type UsersResponse<Texpand = unknown> = Required<UsersRecord> & AuthSystemFields<Texpand>
 export type WishlistsResponse<Texpand = unknown> = Required<WishlistsRecord> & BaseSystemFields<Texpand>
@@ -393,7 +383,6 @@ export type CollectionRecords = {
 	promotedProducts: PromotedProductsRecord
 	queries: QueriesRecord
 	series: SeriesRecord
-	shippingMethods: ShippingMethodsRecord
 	socials: SocialsRecord
 	users: UsersRecord
 	wishlists: WishlistsRecord
@@ -421,7 +410,6 @@ export type CollectionResponses = {
 	promotedProducts: PromotedProductsResponse
 	queries: QueriesResponse
 	series: SeriesResponse
-	shippingMethods: ShippingMethodsResponse
 	socials: SocialsResponse
 	users: UsersResponse
 	wishlists: WishlistsResponse
@@ -452,7 +440,6 @@ export type TypedPocketBase = PocketBase & {
 	collection(idOrName: 'promotedProducts'): RecordService<PromotedProductsResponse>
 	collection(idOrName: 'queries'): RecordService<QueriesResponse>
 	collection(idOrName: 'series'): RecordService<SeriesResponse>
-	collection(idOrName: 'shippingMethods'): RecordService<ShippingMethodsResponse>
 	collection(idOrName: 'socials'): RecordService<SocialsResponse>
 	collection(idOrName: 'users'): RecordService<UsersResponse>
 	collection(idOrName: 'wishlists'): RecordService<WishlistsResponse>

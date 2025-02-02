@@ -639,6 +639,7 @@ routerAdd("GET", "/api/cart", (c) => {
             JOIN products p ON p.id = c.products 
             LEFT JOIN images pi ON pi.id = REPLACE(p.images ->> 0, '"', '')
             WHERE c.users = {:id}
+            AND p.inStock = 1
             ORDER BY c.id DESC
         `)
         .bind({
@@ -657,6 +658,30 @@ routerAdd("POST", "/api/cart", (c) => {
 
     const { productId, amount = 0 } = c.requestInfo().body
     if (!productId) throw ForbiddenError()
+
+    const productInfo = new DynamicModel({
+        id: '',
+        title: '',
+        inStock: ''
+    })
+
+    $app.db()
+        .newQuery(`
+            SELECT 
+                id,
+                title,
+                inStock
+            FROM products 
+            WHERE id = {:id}
+        `)
+        .bind({
+            "id": productId,
+        })
+        .one(productInfo)
+
+    if(productInfo.inStock != 1){
+        throw ApiError(500, `"${productInfo.title}" is out of stock!`)
+    }
 
     // get cart id and product id list
     const pendingCarts = arrayOf(new DynamicModel({
@@ -737,6 +762,7 @@ routerAdd("POST", "/api/checkout", (c) => {
             FROM carts c 
             JOIN products p ON c.products = p.id
             WHERE c.users = {:id}
+            AND p.inStock = 1
         `)
         .bind({
             "id": userId,
