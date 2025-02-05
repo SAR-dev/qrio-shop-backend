@@ -828,6 +828,8 @@ routerAdd("POST", "/api/checkout", (c) => {
         contactNo1: '',
         contactNo2: '',
         receiverAddress: '',
+        shippingFee: '',
+        taxFee: '',
         totalFee: '',
         ref: '',
         created: ''
@@ -842,6 +844,8 @@ routerAdd("POST", "/api/checkout", (c) => {
                 i.contactNo1,
                 i.contactNo2,
                 i.receiverAddress,
+                i.shippingFee,
+                i.taxFee,
                 i.totalFee,
                 i.ref,
                 strftime('%d-%m-%Y %I:%M%p', i.created) AS created
@@ -1132,90 +1136,3 @@ routerAdd("GET", "/api/blogs", (c) => {
         items: filteredBlogs
     })
 })
-
-// routerAdd("GET", "/api/checkout-mail/{invoiceId}", (c) => {
-//     const invoiceId = c.request.pathValue("invoiceId")
-
-//     const invoiceData = new DynamicModel({
-//         name: '',
-//         email: '',
-//         receiverName: '',
-//         contactNo1: '',
-//         contactNo2: '',
-//         receiverAddress: '',
-//         totalFee: '',
-//         ref: '',
-//         created: ''
-//     })
-
-//     $app.db()
-//         .newQuery(`
-//             SELECT 
-//                 u.name ,
-//                 u.email,
-//                 i.receiverName,
-//                 i.contactNo1,
-//                 i.contactNo2,
-//                 i.receiverAddress,
-//                 i.totalFee,
-//                 i.ref,
-//                 strftime('%d-%m-%Y %I:%M%p', i.created) AS created
-//             FROM invoices i 
-//             JOIN users u ON i.users = u.id
-//             WHERE i.id = {:invoiceId}
-//         `)
-//         .bind({
-//             invoiceId
-//         })
-//         .one(invoiceData)
-
-//     const invoiceProductData = arrayOf(new DynamicModel({
-//         title: '',
-//         amount: '',
-//         unitPrice: '',
-//         totalPrice: ''
-//     }))
-
-//     $app.db()
-//         .newQuery(`
-//             SELECT 
-//                 p.title ,
-//                 ip.amount ,
-//                 (ip.sellingPrice - ip.discount) AS unitPrice,
-//                 ((ip.sellingPrice - ip.discount) * ip.amount) AS totalPrice
-//             FROM invoiceProducts ip 
-//             JOIN products p ON ip.products = p.id 
-//             WHERE ip.invoices = {:invoiceId}    
-//         `)
-//         .bind({
-//             invoiceId
-//         })
-//         .all(invoiceProductData)
-
-//     const html = $template.loadFiles(
-//         `${__hooks}/views/order-receipt.html`
-//     ).render({
-//         ...invoiceData,
-//         products: invoiceProductData.map((e, i) => {
-//             return {
-//                 index: i + 1,
-//                 title: e.title,
-//                 amount: e.amount,
-//                 unitPrice: e.unitPrice,
-//                 totalPrice: e.totalPrice
-//             }
-//         })
-//     })
-
-//     const message = new MailerMessage({
-//         from: {
-//             address: $app.settings().meta.senderAddress,
-//             name:    $app.settings().meta.senderName,
-//         },
-//         to:      [{address: invoiceData.email}],
-//         subject: "QRIO - Order Approved",
-//         html:    html
-//     })
-
-//     $app.newMailClient().send(message)
-// })
