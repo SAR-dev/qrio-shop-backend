@@ -8,7 +8,7 @@ EXPOSE 8090
 
 # Copy necessary volumes
 COPY ./pb_data /pb_data
-COPY ./pb_public /pb_public
+# COPY ./pb_public /pb_public
 COPY ./pb_hooks /pb_hooks
 COPY ./pb_migrations /pb_migrations
 
