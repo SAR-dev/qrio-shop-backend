@@ -1,7 +1,7 @@
 FROM ghcr.io/muchobien/pocketbase:0.24
 
 # Set working directory
-WORKDIR /pb_data
+WORKDIR /
 
 # Expose the PocketBase port
 EXPOSE 8090
