@@ -899,14 +899,16 @@ routerAdd("POST", "/api/checkout", (c) => {
     const message = new MailerMessage({
         from: {
             address: $app.settings().meta.senderAddress,
-            name:    $app.settings().meta.senderName,
+            name: $app.settings().meta.senderName,
         },
-        to:      [{address: invoiceData.email}],
+        to: [{ address: invoiceData.email }],
         subject: "QRIO - Order Approved",
-        html:    html
+        html: html
     })
 
-    $app.newMailClient().send(message)
+    try {
+        $app.newMailClient().send(message)
+    } catch (err) { }
 
     return c.json(200, {
         ref: ref
