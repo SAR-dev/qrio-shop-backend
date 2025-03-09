@@ -992,8 +992,7 @@ routerAdd("GET", "/api/products", (c) => {
 
     const seriesFilter = seriesId ? `(p.series = "${seriesId}")` : ""
     const categoryFilter = categoryId ? `(p.categories = "${categoryId}")` : ""
-    const searchFilter = search.length > 0 ? `( ${search.map(e => `LOWER(p.title) LIKE '%${e.toLowerCase()}%' OR LOWER(p.summary) LIKE '%${e.toLowerCase()}%' OR LOWER(p.description) LIKE '%${e.toLowerCase()}%'`).join(" OR ")} )` : ""
-    const filters = [seriesFilter, categoryFilter, searchFilter]
+    const filters = [seriesFilter, categoryFilter]
 
     pageSize = Number(pageSize) > 0 ? Number(pageSize) : 20;
     pageNo = Number(pageNo) > 0 ? Number(pageNo) : 1;
@@ -1009,7 +1008,6 @@ routerAdd("GET", "/api/products", (c) => {
             FROM products p
             LEFT JOIN categories ct ON p.categories = ct.id 
             LEFT JOIN series s ON p.series = s.id
-            ${filters.filter(e => e.length > 0).length > 0 ? "WHERE " + filters.filter(e => e.length > 0).join(" AND ") : ""}
         `)
         .one(counted)
 
@@ -1045,13 +1043,27 @@ routerAdd("GET", "/api/products", (c) => {
                 COALESCE(s.title, '') AS seriesTitle,
                 COALESCE(s.slug, '') AS seriesSlug,
                 COALESCE(pi.id, '') AS productImageId,
-                COALESCE(pi.source, '') AS productImageSource
+                COALESCE(pi.source, '') AS productImageSource,
+                (
+                    ${search.length == 0 ? 1 : `
+                    CASE 
+                        ${search.map(e => `
+                        WHEN p.title LIKE '%${e.toLowerCase()}%' THEN 10
+                        WHEN ct.title LIKE '%${e.toLowerCase()}%' THEN 10
+                        WHEN s.title LIKE '%${e.toLowerCase()}%' THEN 10
+                        WHEN p.summary LIKE '%${e.toLowerCase()}%' THEN 10
+                        WHEN p.tags LIKE '%${e.toLowerCase()}%' THEN 10
+                        `).join('')}
+                        ELSE 0
+                    END
+                    `}
+                ) AS matchScore
             FROM products p
             LEFT JOIN images pi ON pi.id = REPLACE(p.images ->> 0, '"', '')
             LEFT JOIN categories ct ON p.categories = ct.id 
             LEFT JOIN series s ON p.series = s.id
             ${filters.filter(e => e.length > 0).length > 0 ? "WHERE " + filters.filter(e => e.length > 0).join(" AND ") : ""}
-            ORDER BY p.created DESC
+            ORDER BY matchScore DESC, p.created DESC
             LIMIT ${Number(pageSize)} OFFSET ${(Number(pageNo) - 1) * Number(pageSize)}
         `)
         .all(filteredProducts)
