@@ -1,0 +1,46 @@
+/// <reference path="../pb_data/types.d.ts" />
+migrate((app) => {
+  const collection = app.findCollectionByNameOrId("pbc_4092854851")
+
+  // update field
+  collection.fields.addAt(16, new Field({
+    "hidden": false,
+    "id": "select3050457783",
+    "maxSelect": 1,
+    "name": "displayType",
+    "presentable": false,
+    "required": false,
+    "system": false,
+    "type": "select",
+    "values": [
+      "PROMOTION",
+      "DISCOUNT",
+      "TRENDING",
+      "SERIES",
+      "CATEGORY"
+    ]
+  }))
+
+  return app.save(collection)
+}, (app) => {
+  const collection = app.findCollectionByNameOrId("pbc_4092854851")
+
+  // update field
+  collection.fields.addAt(16, new Field({
+    "hidden": false,
+    "id": "select3050457783",
+    "maxSelect": 1,
+    "name": "displayType",
+    "presentable": false,
+    "required": false,
+    "system": false,
+    "type": "select",
+    "values": [
+      "PROMOTION",
+      "DISCOUNT",
+      "TRENDING"
+    ]
+  }))
+
+  return app.save(collection)
+})

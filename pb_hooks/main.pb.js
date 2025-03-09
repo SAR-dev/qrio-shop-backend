@@ -186,47 +186,27 @@ routerAdd("GET", "/api/homepage", (c) => {
 });
 
 routerAdd("GET", "/api/homepage-products", (c) => {
-    const promotedProducts = arrayOf(new DynamicModel({
+    const productSections = arrayOf(new DynamicModel({
         id: '',
         title: '',
-        tagLine: '',
-        slug: '',
-        sellingPrice: '',
-        discount: '',
-        summary: '',
-        productImageId: '',
-        productImageSource: '',
-        categoryTitle: '',
-        categorySlug: '',
-        seriesTitle: '',
-        seriesSlug: ''
+        subtitle: ''
     }))
 
     $app.db()
         .newQuery(`
             SELECT 
-                p.id,
-                p.title,
-                pp.tagLine,
-                p.slug,
-                p.sellingPrice,
-                p.discount,
-                p.summary,
-                COALESCE(ct.title, '') AS categoryTitle,
-                COALESCE(ct.slug, '') AS categorySlug,
-                COALESCE(s.title, '') AS seriesTitle,
-                COALESCE(s.slug, '') AS seriesSlug,
-                COALESCE(pi.id, '') AS productImageId,
-                COALESCE(pi.source, '') AS productImageSource
-            FROM promotedProducts pp 
-            JOIN products p ON pp.products = p.id
-            LEFT JOIN images pi ON pi.id = REPLACE(p.images ->> 0, '"', '')
-            LEFT JOIN categories ct ON p.categories = ct.id 
-            LEFT JOIN series s ON p.series = s.id
+                ps.id,
+                ps.title,
+                ps.subtitle,
+                json_array_length(ps.products) AS product_count
+            FROM productSections ps
+            GROUP BY ps.id
+            HAVING product_count >= 4
         `)
-        .all(promotedProducts)
+        .all(productSections)
 
-    const trendingProducts = arrayOf(new DynamicModel({
+    const products = arrayOf(new DynamicModel({
+        sectionId: '',
         id: '',
         title: '',
         tagLine: '',
@@ -244,51 +224,15 @@ routerAdd("GET", "/api/homepage-products", (c) => {
 
     $app.db()
         .newQuery(`
+            WITH res AS (
+                SELECT 
+                    ps.id,
+                    json_each.value AS productId
+                FROM productSections ps, json_each(ps.products)
+                WHERE ps.id IN (${productSections.map(e => `'${e.id}'`).join(',')})
+            )
             SELECT 
-                p.id,
-                p.title,
-                p.slug,
-                p.sellingPrice,
-                p.discount,
-                p.summary,
-                COALESCE(ct.title, '') AS categoryTitle,
-                COALESCE(ct.slug, '') AS categorySlug,
-                COALESCE(s.title, '') AS seriesTitle,
-                COALESCE(s.slug, '') AS seriesSlug,
-                COALESCE(pi.id, '') AS productImageId,
-                COALESCE(pi.source, '') AS productImageSource,
-                COUNT(CASE WHEN c.id IS NOT NULL THEN 1 END) AS counts
-            FROM products p
-            LEFT JOIN carts c ON p.id = c.products
-            LEFT JOIN images pi ON pi.id = REPLACE(p.images ->> 0, '"', '')
-            LEFT JOIN categories ct ON p.categories = ct.id 
-            LEFT JOIN series s ON p.series = s.id
-            WHERE p.inStock = 1
-            GROUP BY p.id
-            ORDER BY counts DESC, p.priority DESC
-            LIMIT 8
-        `)
-        .all(trendingProducts)
-
-    const discountProducts = arrayOf(new DynamicModel({
-        id: '',
-        title: '',
-        tagLine: '',
-        slug: '',
-        sellingPrice: '',
-        discount: '',
-        summary: '',
-        productImageId: '',
-        productImageSource: '',
-        categoryTitle: '',
-        categorySlug: '',
-        seriesTitle: '',
-        seriesSlug: ''
-    }))
-
-    $app.db()
-        .newQuery(`
-            SELECT 
+                r.id AS sectionId,
                 p.id,
                 p.title,
                 p.slug,
@@ -302,20 +246,71 @@ routerAdd("GET", "/api/homepage-products", (c) => {
                 COALESCE(pi.id, '') AS productImageId,
                 COALESCE(pi.source, '') AS productImageSource
             FROM products p
+            JOIN res r ON r.productId = p.id 
             LEFT JOIN images pi ON pi.id = REPLACE(p.images ->> 0, '"', '')
             LEFT JOIN categories ct ON p.categories = ct.id 
             LEFT JOIN series s ON p.series = s.id
-            WHERE p.inStock = 1
-            ORDER BY p.discount DESC 
-            LIMIT 8
         `)
-        .all(discountProducts)
+        .all(products)
 
-    return c.json(200, {
-        trendingProducts,
-        discountProducts,
-        promotedProducts
+    const productSectionProducts = productSections.map(e => {
+        return {...e, products: []}
     })
+    
+    products.forEach((product) => {
+        const foundIndex = productSectionProducts.findIndex(e => e.id == product.sectionId)
+        productSectionProducts[foundIndex].products = [...productSectionProducts[foundIndex].products, {
+            ...product
+        }]
+    })
+
+    return c.json(200, productSectionProducts)
+})
+
+routerAdd("GET", "/api/promoted-products", (c) => {
+    const products = arrayOf(new DynamicModel({
+        id: '',
+        title: '',
+        tagLine: '',
+        slug: '',
+        sellingPrice: '',
+        discount: '',
+        summary: '',
+        productImageId: '',
+        productImageSource: '',
+        categoryTitle: '',
+        categorySlug: '',
+        seriesTitle: '',
+        seriesSlug: ''
+    }))
+    
+    $app.db()
+        .newQuery(`
+            SELECT 
+                p.id,
+                pp.tagLine,
+                p.title,
+                p.slug,
+                p.sellingPrice,
+                p.discount,
+                p.summary,
+                COALESCE(ct.title, '') AS categoryTitle,
+                COALESCE(ct.slug, '') AS categorySlug,
+                COALESCE(s.title, '') AS seriesTitle,
+                COALESCE(s.slug, '') AS seriesSlug,
+                COALESCE(pi.id, '') AS productImageId,
+                COALESCE(pi.source, '') AS productImageSource
+            FROM products p
+            JOIN promotedProducts pp ON pp.products = p.id 
+            LEFT JOIN images pi ON pi.id = REPLACE(p.images ->> 0, '"', '')
+            LEFT JOIN categories ct ON p.categories = ct.id 
+            LEFT JOIN series s ON p.series = s.id
+            GROUP BY p.id
+            ORDER BY p.priority DESC
+        `)
+        .all(products)
+
+    return c.json(200, products)
 })
 
 routerAdd("GET", "/api/homepage-lists", (c) => {
