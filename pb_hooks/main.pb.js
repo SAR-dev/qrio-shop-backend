@@ -254,9 +254,9 @@ routerAdd("GET", "/api/homepage-products", (c) => {
         .all(products)
 
     const productSectionProducts = productSections.map(e => {
-        return {...e, products: []}
+        return { ...e, products: [] }
     })
-    
+
     products.forEach((product) => {
         const foundIndex = productSectionProducts.findIndex(e => e.id == product.sectionId)
         productSectionProducts[foundIndex].products = [...productSectionProducts[foundIndex].products, {
@@ -283,7 +283,7 @@ routerAdd("GET", "/api/promoted-products", (c) => {
         seriesTitle: '',
         seriesSlug: ''
     }))
-    
+
     $app.db()
         .newQuery(`
             SELECT 
@@ -735,13 +735,26 @@ routerAdd("POST", "/api/checkout", (c) => {
 
     let invoiceId = '';
 
-    const { receiverName, contactNo1, contactNo2, receiverNote, receiverAddress } = c.requestInfo().body
+    const { receiverName, contactNo1, contactNo2, receiverNote, receiverAddress, shippingCharge } = c.requestInfo().body
     if (!receiverName || (!contactNo1 && !contactNo2) || !receiverAddress) throw ForbiddenError()
 
-    const shippingFee = 100;
     const taxFee = 0;
     const status = 'CREATED';
     const ref = (Date.now().toString(36) + Math.random().toString(36).slice(2, 10)).toUpperCase();
+
+    const shippingCost = new DynamicModel({
+        shippingCost: ''
+    })
+
+    $app.db()
+        .newQuery(`
+            SELECT shippingCost FROM shippingCharges
+            WHERE id = {:id}    
+        `)
+        .bind({
+            "id": shippingCharge
+        })
+        .one(shippingCost)
 
     const cartProducts = arrayOf(new DynamicModel({
         cartId: '',
@@ -783,9 +796,9 @@ routerAdd("POST", "/api/checkout", (c) => {
         invoiceRecord.set("receiverNote", receiverNote)
         invoiceRecord.set("receiverAddress", receiverAddress)
         invoiceRecord.set("productsFee", productsFee)
-        invoiceRecord.set("shippingFee", shippingFee)
+        invoiceRecord.set("shippingCharge", shippingCharge)
         invoiceRecord.set("taxFee", taxFee)
-        invoiceRecord.set("totalFee", (Number(productsFee) + Number(shippingFee) + Number(taxFee)))
+        invoiceRecord.set("totalFee", (Number(productsFee) + Number(shippingCost.shippingCost) + Number(taxFee)))
         invoiceRecord.set("status", status)
         txDao.save(invoiceRecord)
 
@@ -823,7 +836,7 @@ routerAdd("POST", "/api/checkout", (c) => {
         contactNo1: '',
         contactNo2: '',
         receiverAddress: '',
-        shippingFee: '',
+        shippingCost: '',
         taxFee: '',
         totalFee: '',
         ref: '',
@@ -839,12 +852,13 @@ routerAdd("POST", "/api/checkout", (c) => {
                 i.contactNo1,
                 i.contactNo2,
                 i.receiverAddress,
-                i.shippingFee,
+                s.shippingCost,
                 i.taxFee,
                 i.totalFee,
                 i.ref,
                 strftime('%d-%m-%Y %I:%M%p', i.created) AS created
             FROM invoices i 
+            JOIN shippingCharges s ON i.shippingCharge = s.id
             JOIN users u ON i.users = u.id
             WHERE i.id = {:invoiceId}
         `)
@@ -1143,5 +1157,58 @@ routerAdd("GET", "/api/blogs", (c) => {
         hasNext: pageNo < Math.ceil(totalItems / pageSize),
         hasPrev: pageNo > 1,
         items: filteredBlogs
+    })
+})
+
+routerAdd("GET", "/api/summary", (c) => {
+    const admin = c.auth.isSuperuser();
+    if (!admin) throw ForbiddenError();
+
+    const seriesList = arrayOf(new DynamicModel({
+        id: '',
+        title: ''
+    }))
+
+    $app.db()
+        .newQuery(`
+            SELECT 
+                s.id,
+                s.title
+            FROM series s
+            ORDER BY s.title ASC
+        `)
+        .all(seriesList)
+
+    const categoryList = arrayOf(new DynamicModel({
+        id: '',
+        title: ''
+    }))
+
+    $app.db()
+        .newQuery(`
+            SELECT 
+                c.id,
+                c.title
+            FROM categories c
+            ORDER BY c.title ASC
+        `)
+        .all(categoryList)
+
+    const tagList = arrayOf(new DynamicModel({
+        tag: ''
+    }))
+
+    $app.db()
+        .newQuery(`
+            SELECT DISTINCT value AS tag
+            FROM products, json_each(products.tags)
+            ORDER BY tag ASC 
+        `)
+        .all(tagList)
+
+    return c.json(200, {
+        seriesList,
+        categoryList,
+        tagList,
     })
 })

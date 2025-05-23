@@ -16,17 +16,18 @@ export enum Collections {
 	Categories = "categories",
 	Comments = "comments",
 	FeaturedCategories = "featuredCategories",
-	FeaturedProducts = "featuredProducts",
 	FeaturedSeries = "featuredSeries",
 	HomepageCarousel = "homepageCarousel",
 	Images = "images",
 	InvoiceProducts = "invoiceProducts",
 	Invoices = "invoices",
 	Payments = "payments",
+	ProductSections = "productSections",
 	Products = "products",
 	PromotedProducts = "promotedProducts",
 	Queries = "queries",
 	Series = "series",
+	ShippingCharges = "shippingCharges",
 	Socials = "socials",
 	Users = "users",
 	Wishlists = "wishlists",
@@ -156,13 +157,6 @@ export type FeaturedCategoriesRecord = {
 	updated?: IsoDateString
 }
 
-export type FeaturedProductsRecord = {
-	created?: IsoDateString
-	id: string
-	products: RecordIdString
-	updated?: IsoDateString
-}
-
 export type FeaturedSeriesRecord = {
 	created?: IsoDateString
 	id: string
@@ -222,8 +216,8 @@ export type InvoicesRecord = {
 	receiverName: string
 	receiverNote?: string
 	ref: string
+	shippingCharge: RecordIdString
 	shippingCompany?: string
-	shippingFee?: number
 	status: InvoicesStatusOptions
 	taxFee?: number
 	totalFee: number
@@ -243,12 +237,29 @@ export type PaymentsRecord = {
 	updated?: IsoDateString
 }
 
+export type ProductSectionsRecord = {
+	created?: IsoDateString
+	id: string
+	products?: RecordIdString[]
+	subtitle: string
+	title: string
+	updated?: IsoDateString
+}
+
+export enum ProductsDisplayTypeOptions {
+	"PROMOTION" = "PROMOTION",
+	"DISCOUNT" = "DISCOUNT",
+	"TRENDING" = "TRENDING",
+	"SERIES" = "SERIES",
+	"CATEGORY" = "CATEGORY",
+}
 export type ProductsRecord<Ttags = unknown> = {
 	buyingPrice?: number
 	categories?: RecordIdString
 	created?: IsoDateString
 	description?: HTMLString
 	discount?: number
+	displayType?: ProductsDisplayTypeOptions
 	id: string
 	images?: RecordIdString[]
 	inStock?: boolean
@@ -267,7 +278,7 @@ export type ProductsRecord<Ttags = unknown> = {
 export type PromotedProductsRecord = {
 	created?: IsoDateString
 	id: string
-	products: RecordIdString
+	products?: RecordIdString
 	tagLine: string
 	updated?: IsoDateString
 }
@@ -292,6 +303,15 @@ export type SeriesRecord = {
 	slug: string
 	thumbnail?: RecordIdString
 	title: string
+	updated?: IsoDateString
+}
+
+export type ShippingChargesRecord = {
+	created?: IsoDateString
+	id: string
+	shippingArea: string
+	shippingCompany: string
+	shippingCost?: number
 	updated?: IsoDateString
 }
 
@@ -344,17 +364,18 @@ export type CartsResponse<Texpand = unknown> = Required<CartsRecord> & BaseSyste
 export type CategoriesResponse<Texpand = unknown> = Required<CategoriesRecord> & BaseSystemFields<Texpand>
 export type CommentsResponse<Texpand = unknown> = Required<CommentsRecord> & BaseSystemFields<Texpand>
 export type FeaturedCategoriesResponse<Texpand = unknown> = Required<FeaturedCategoriesRecord> & BaseSystemFields<Texpand>
-export type FeaturedProductsResponse<Texpand = unknown> = Required<FeaturedProductsRecord> & BaseSystemFields<Texpand>
 export type FeaturedSeriesResponse<Texpand = unknown> = Required<FeaturedSeriesRecord> & BaseSystemFields<Texpand>
 export type HomepageCarouselResponse<Texpand = unknown> = Required<HomepageCarouselRecord> & BaseSystemFields<Texpand>
 export type ImagesResponse<Texpand = unknown> = Required<ImagesRecord> & BaseSystemFields<Texpand>
 export type InvoiceProductsResponse<Texpand = unknown> = Required<InvoiceProductsRecord> & BaseSystemFields<Texpand>
 export type InvoicesResponse<Texpand = unknown> = Required<InvoicesRecord> & BaseSystemFields<Texpand>
 export type PaymentsResponse<Texpand = unknown> = Required<PaymentsRecord> & BaseSystemFields<Texpand>
+export type ProductSectionsResponse<Texpand = unknown> = Required<ProductSectionsRecord> & BaseSystemFields<Texpand>
 export type ProductsResponse<Ttags = unknown, Texpand = unknown> = Required<ProductsRecord<Ttags>> & BaseSystemFields<Texpand>
 export type PromotedProductsResponse<Texpand = unknown> = Required<PromotedProductsRecord> & BaseSystemFields<Texpand>
 export type QueriesResponse<Texpand = unknown> = Required<QueriesRecord> & BaseSystemFields<Texpand>
 export type SeriesResponse<Texpand = unknown> = Required<SeriesRecord> & BaseSystemFields<Texpand>
+export type ShippingChargesResponse<Texpand = unknown> = Required<ShippingChargesRecord> & BaseSystemFields<Texpand>
 export type SocialsResponse<Texpand = unknown> = Required<SocialsRecord> & BaseSystemFields<Texpand>
 export type UsersResponse<Texpand = unknown> = Required<UsersRecord> & AuthSystemFields<Texpand>
 export type WishlistsResponse<Texpand = unknown> = Required<WishlistsRecord> & BaseSystemFields<Texpand>
@@ -372,17 +393,18 @@ export type CollectionRecords = {
 	categories: CategoriesRecord
 	comments: CommentsRecord
 	featuredCategories: FeaturedCategoriesRecord
-	featuredProducts: FeaturedProductsRecord
 	featuredSeries: FeaturedSeriesRecord
 	homepageCarousel: HomepageCarouselRecord
 	images: ImagesRecord
 	invoiceProducts: InvoiceProductsRecord
 	invoices: InvoicesRecord
 	payments: PaymentsRecord
+	productSections: ProductSectionsRecord
 	products: ProductsRecord
 	promotedProducts: PromotedProductsRecord
 	queries: QueriesRecord
 	series: SeriesRecord
+	shippingCharges: ShippingChargesRecord
 	socials: SocialsRecord
 	users: UsersRecord
 	wishlists: WishlistsRecord
@@ -399,17 +421,18 @@ export type CollectionResponses = {
 	categories: CategoriesResponse
 	comments: CommentsResponse
 	featuredCategories: FeaturedCategoriesResponse
-	featuredProducts: FeaturedProductsResponse
 	featuredSeries: FeaturedSeriesResponse
 	homepageCarousel: HomepageCarouselResponse
 	images: ImagesResponse
 	invoiceProducts: InvoiceProductsResponse
 	invoices: InvoicesResponse
 	payments: PaymentsResponse
+	productSections: ProductSectionsResponse
 	products: ProductsResponse
 	promotedProducts: PromotedProductsResponse
 	queries: QueriesResponse
 	series: SeriesResponse
+	shippingCharges: ShippingChargesResponse
 	socials: SocialsResponse
 	users: UsersResponse
 	wishlists: WishlistsResponse
@@ -429,17 +452,18 @@ export type TypedPocketBase = PocketBase & {
 	collection(idOrName: 'categories'): RecordService<CategoriesResponse>
 	collection(idOrName: 'comments'): RecordService<CommentsResponse>
 	collection(idOrName: 'featuredCategories'): RecordService<FeaturedCategoriesResponse>
-	collection(idOrName: 'featuredProducts'): RecordService<FeaturedProductsResponse>
 	collection(idOrName: 'featuredSeries'): RecordService<FeaturedSeriesResponse>
 	collection(idOrName: 'homepageCarousel'): RecordService<HomepageCarouselResponse>
 	collection(idOrName: 'images'): RecordService<ImagesResponse>
 	collection(idOrName: 'invoiceProducts'): RecordService<InvoiceProductsResponse>
 	collection(idOrName: 'invoices'): RecordService<InvoicesResponse>
 	collection(idOrName: 'payments'): RecordService<PaymentsResponse>
+	collection(idOrName: 'productSections'): RecordService<ProductSectionsResponse>
 	collection(idOrName: 'products'): RecordService<ProductsResponse>
 	collection(idOrName: 'promotedProducts'): RecordService<PromotedProductsResponse>
 	collection(idOrName: 'queries'): RecordService<QueriesResponse>
 	collection(idOrName: 'series'): RecordService<SeriesResponse>
+	collection(idOrName: 'shippingCharges'): RecordService<ShippingChargesResponse>
 	collection(idOrName: 'socials'): RecordService<SocialsResponse>
 	collection(idOrName: 'users'): RecordService<UsersResponse>
 	collection(idOrName: 'wishlists'): RecordService<WishlistsResponse>
