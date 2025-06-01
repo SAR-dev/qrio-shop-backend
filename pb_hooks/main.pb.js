@@ -1,3 +1,19 @@
+// remove product variants that are not used daily
+// cronAdd("remove-expired-teacher-student-class-logs", "*/1 * * * *", () => {
+//     $app.db()
+//         .newQuery(`
+//             DELETE FROM classLogs 
+//             WHERE status = 'CREATED' 
+//             AND NOT EXISTS (
+//                 SELECT 1 FROM teacherStudentRel tsr 
+//                 WHERE tsr.studentId = classLogs.studentId 
+//                 AND tsr.teacherId = classLogs.teacherId
+//             )
+//         `)
+//         .execute()
+//     console.log("Class logs cleaned 🙏")
+// })
+
 routerAdd("GET", "/api/homepage", (c) => {
     const homepageCarousel = arrayOf(new DynamicModel({
         title1: '',
@@ -1211,4 +1227,73 @@ routerAdd("GET", "/api/summary", (c) => {
         categoryList,
         tagList,
     })
+})
+
+routerAdd("POST", "/api/product", (c) => {
+    const admin = c.auth.isSuperuser();
+    if (!admin) throw ForbiddenError();
+
+    const { 
+        title,
+        slug,
+        buyingPrice,
+        sellingPrice,
+        discount,
+        categories,
+        series,
+        summary,
+        description,
+        tags, 
+        images,
+        priority,
+        inStock,
+        displayType, 
+        productVariants 
+     } = c.requestInfo().body
+     
+    if (!title || !slug || !buyingPrice || !sellingPrice || !categories || !series || !summary || !description) throw new BadRequestError("Some values are missing!");
+
+    function isNullOrEmptyOrArray(value) {
+        return (
+            value === null || 
+            value === undefined ||
+            (typeof value === "string" && value.trim() === "") || 
+            (Array.isArray(value)) 
+        );
+    }
+
+    // check if tags, images, productVariants is of list type
+    if(!isNullOrEmptyOrArray(tags) || !isNullOrEmptyOrArray(images) || !isNullOrEmptyOrArray(productVariants)) throw new BadRequestError("Some values are missing!");
+
+    $app.runInTransaction((txDao) => {
+        const productVariantIds = []
+        productVariants.forEach(v => {
+            const pvCollection = txDao.findCollectionByNameOrId("productVariants")
+            const pvRecord = new Record(pvCollection)
+            pvRecord.set("title", v)
+            txDao.save(pvRecord)
+            productVariantIds.push(pvRecord.get("id"))
+        })
+        
+        const collection = txDao.findCollectionByNameOrId("products")
+        const record = new Record(collection)
+        record.set("title", title);
+        record.set("slug", slug);
+        record.set("buyingPrice", buyingPrice);
+        record.set("sellingPrice", sellingPrice);
+        record.set("discount", discount);
+        record.set("categories", categories);
+        record.set("series", series);
+        record.set("summary", summary);
+        record.set("description", description);
+        record.set("tags", tags);
+        record.set("images", images);
+        record.set("priority", priority);
+        record.set("inStock", inStock);
+        record.set("displayType", displayType);
+        record.set("productVariants", productVariantIds);
+        txDao.save(record)
+    })
+
+    return c.json(200)
 })
