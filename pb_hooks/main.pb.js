@@ -1266,15 +1266,6 @@ routerAdd("POST", "/api/product", (c) => {
     if(!isNullOrEmptyOrArray(tags) || !isNullOrEmptyOrArray(images) || !isNullOrEmptyOrArray(productVariants)) throw new BadRequestError("Some values are missing!");
 
     $app.runInTransaction((txDao) => {
-        const productVariantIds = []
-        productVariants.forEach(v => {
-            const pvCollection = txDao.findCollectionByNameOrId("productVariants")
-            const pvRecord = new Record(pvCollection)
-            pvRecord.set("title", v)
-            txDao.save(pvRecord)
-            productVariantIds.push(pvRecord.get("id"))
-        })
-        
         const collection = txDao.findCollectionByNameOrId("products")
         const record = new Record(collection)
         record.set("title", title);
@@ -1291,8 +1282,16 @@ routerAdd("POST", "/api/product", (c) => {
         record.set("priority", priority);
         record.set("inStock", inStock);
         record.set("displayType", displayType);
-        record.set("productVariants", productVariantIds);
         txDao.save(record)
+        const productId = record.get("id")
+
+        const pvCollection = txDao.findCollectionByNameOrId("productVariants")
+        productVariants.forEach(v => {
+            const pvRecord = new Record(pvCollection)
+            pvRecord.set("title", v)
+            pvRecord.set("products", productId)
+            txDao.save(pvRecord)
+        })
     })
 
     return c.json(200)
@@ -1335,16 +1334,25 @@ routerAdd("PUT", "/api/product", (c) => {
     // check if tags, images, productVariants is of list type
     if(!isNullOrEmptyOrArray(tags) || !isNullOrEmptyOrArray(images) || !isNullOrEmptyOrArray(productVariants)) throw new BadRequestError("Some values are missing!");
 
-    $app.runInTransaction((txDao) => {
-        const productVariantIds = []
-        productVariants.forEach(v => {
-            const pvCollection = txDao.findCollectionByNameOrId("productVariants")
-            const pvRecord = new Record(pvCollection)
-            pvRecord.set("title", v)
-            txDao.save(pvRecord)
-            productVariantIds.push(pvRecord.get("id"))
+    const productVariantData = arrayOf(new DynamicModel({
+        id: '',
+        title: ''
+    }))
+
+    $app.db()
+        .newQuery(`
+            SELECT p.id, p.title
+            FROM productVariants p 
+            WHERE p.products = {:id}   
+        `)
+        .bind({
+            id
         })
+        .all(productVariantData)
+
+    const existingProductVariants = productVariantData.map(el => el.title)
         
+    $app.runInTransaction((txDao) => {
         const record = txDao.findRecordById("products", id)
         if(!record) throw new BadRequestError("Product id isincorrect!")
         record.set("title", title);
@@ -1361,8 +1369,21 @@ routerAdd("PUT", "/api/product", (c) => {
         record.set("priority", priority);
         record.set("inStock", inStock);
         record.set("displayType", displayType);
-        record.set("productVariants", productVariantIds);
         txDao.save(record)
+
+        const pvCollection = txDao.findCollectionByNameOrId("productVariants")
+        // find existing titles and filter it out and delete if not exist
+        productVariants.filter(el => !existingProductVariants.includes(el)).forEach(v => {
+            const pvRecord = new Record(pvCollection)
+            pvRecord.set("title", v)
+            pvRecord.set("products", id)
+            txDao.save(pvRecord)
+        })
+
+        productVariantData.filter(el => !productVariants.includes(el.title)).forEach(v => {
+            const pvRecord = txDao.findRecordById("productVariants", v.id)
+            txDao.delete(pvRecord)
+        })
     })
 
     return c.json(200)
