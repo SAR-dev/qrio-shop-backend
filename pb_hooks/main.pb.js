@@ -1,19 +1,3 @@
-// remove product variants that are not used daily
-// cronAdd("remove-expired-teacher-student-class-logs", "*/1 * * * *", () => {
-//     $app.db()
-//         .newQuery(`
-//             DELETE FROM classLogs 
-//             WHERE status = 'CREATED' 
-//             AND NOT EXISTS (
-//                 SELECT 1 FROM teacherStudentRel tsr 
-//                 WHERE tsr.studentId = classLogs.studentId 
-//                 AND tsr.teacherId = classLogs.teacherId
-//             )
-//         `)
-//         .execute()
-//     console.log("Class logs cleaned 🙏")
-// })
-
 routerAdd("GET", "/api/homepage", (c) => {
     const homepageCarousel = arrayOf(new DynamicModel({
         title1: '',
@@ -41,162 +25,7 @@ routerAdd("GET", "/api/homepage", (c) => {
         `)
         .all(homepageCarousel)
 
-    const featuredSeries = arrayOf(new DynamicModel({
-        tagLine: '',
-        seriesId: '',
-        seriesTitle: '',
-        seriesSlug: '',
-        seriesImageId: '',
-        seriesImageSource: '',
-
-        productId: '',
-        productTitle: '',
-        productSlug: '',
-        productPrice: 0,
-        productImageId: '',
-        productImageSource: ''
-    }))
-
-    $app.db()
-        .newQuery(`
-            WITH rankedProducts AS (
-                SELECT 
-                    fs.tagLine,
-                    p.id AS productId,
-                    p.title AS productTitle,
-                    p.slug AS productSlug, 
-                    (p.sellingPrice - p.discount) AS productPrice,
-                    COALESCE(pi.id, '') AS productImageId,
-                    COALESCE(pi.source, '') AS productImageSource,
-                    s.id AS seriesId,
-                    s.title AS seriesTitle,
-                    s.slug AS seriesSlug,
-                    COALESCE(si.id, '') AS seriesImageId,
-                    COALESCE(si.source, '') AS seriesImageSource,
-                    ROW_NUMBER() OVER (PARTITION BY p.series ORDER BY p.priority DESC, p.id) AS rn
-                FROM products p
-                JOIN series s ON p.series = s.id
-                JOIN featuredSeries fs ON fs.series = s.id
-                LEFT JOIN images pi ON pi.id = REPLACE(p.images ->> 0, '"', '')
-                LEFT JOIN images si ON si.id = s.cover
-                WHERE p.series IN (
-                    SELECT series FROM featuredSeries
-                )
-                AND p.inStock = 1
-            )
-            SELECT * FROM rankedProducts
-            WHERE rn <= 4   
-        `)
-        .all(featuredSeries)
-
-    const featuredSeriesProductIds = featuredSeries.map(e => `'${e.productId}'`).join(",")
-
-    const seriesList = featuredSeries.map(series => {
-        return {
-            tagLine: series.tagLine,
-            seriesId: series.seriesId,
-            seriesTitle: series.seriesTitle,
-            seriesSlug: series.seriesSlug,
-            seriesImageId: series.seriesImageId,
-            seriesImageSource: series.seriesImageSource
-        }
-    })
-
-    const unqSeries = Array.from(
-        new Map(seriesList.map(obj => [obj.seriesId, { ...obj, products: [] }])).values()
-    );
-
-    featuredSeries.forEach((product) => {
-        const foundIndex = unqSeries.findIndex(e => e.seriesId == product.seriesId)
-        unqSeries[foundIndex].products = [...unqSeries[foundIndex].products, {
-            productId: product.productId,
-            productTitle: product.productTitle,
-            productPrice: product.productPrice,
-            productSlug: product.productSlug,
-            productImageId: product.productImageId,
-            productImageSource: product.productImageSource
-        }]
-    })
-
-    const featuredCategories = arrayOf(new DynamicModel({
-        tagLine: '',
-        categoryId: '',
-        categoryTitle: '',
-        categorySlug: '',
-        categoryImageId: '',
-        categoryImageSource: '',
-
-        productId: '',
-        productTitle: '',
-        productSlug: '',
-        productPrice: 0,
-        productImageId: '',
-        productImageSource: ''
-    }))
-
-    $app.db()
-        .newQuery(`
-            WITH rankedProducts AS (
-                SELECT 
-                    fc.tagLine,
-                    p.id AS productId,
-                    p.title AS productTitle,
-                    p.slug AS productSlug, 
-                    (p.sellingPrice - p.discount) AS productPrice,
-                    COALESCE(pi.id, '') AS productImageId,
-                    COALESCE(pi.source, '') AS productImageSource,
-                    c.id AS categoryId,
-                    c.title AS categoryTitle,
-                    c.slug AS categorySlug,
-                    COALESCE(ci.id, '') AS categoryImageId,
-                    COALESCE(ci.source, '') AS categoryImageSource,
-                    ROW_NUMBER() OVER (PARTITION BY p.categories ORDER BY p.priority DESC, p.id) AS rn
-                FROM products p
-                JOIN categories c ON p.categories = c.id
-                JOIN featuredCategories fc ON fc.categories = c.id
-                LEFT JOIN images pi ON pi.id = REPLACE(p.images ->> 0, '"', '')
-                LEFT JOIN images ci ON ci.id = c.thumbnail
-                WHERE p.categories IN (
-                    SELECT categories FROM featuredCategories
-                )
-                AND p.inStock = 1
-                AND p.id NOT IN (${featuredSeriesProductIds})
-            )
-            SELECT * FROM rankedProducts
-            WHERE rn <= 4     
-        `)
-        .all(featuredCategories);
-
-    const categories = featuredCategories.map(category => {
-        return {
-            tagLine: category.tagLine,
-            categoryId: category.categoryId,
-            categoryTitle: category.categoryTitle,
-            categorySlug: category.categorySlug,
-            categoryImageId: category.categoryImageId,
-            categoryImageSource: category.categoryImageSource
-        }
-    })
-
-    const unqCategories = Array.from(
-        new Map(categories.map(obj => [obj.categoryId, { ...obj, products: [] }])).values()
-    );
-
-    featuredCategories.forEach((product) => {
-        const foundIndex = unqCategories.findIndex(e => e.categoryId == product.categoryId)
-        unqCategories[foundIndex].products = [...unqCategories[foundIndex].products, {
-            productId: product.productId,
-            productTitle: product.productTitle,
-            productPrice: product.productPrice,
-            productSlug: product.productSlug,
-            productImageId: product.productImageId,
-            productImageSource: product.productImageSource
-        }]
-    })
-
     return c.json(200, {
-        featuredCategories: unqCategories,
-        featuredSeries: unqSeries,
         homepageCarousel
     })
 });
@@ -205,7 +34,10 @@ routerAdd("GET", "/api/homepage-products", (c) => {
     const productSections = arrayOf(new DynamicModel({
         id: '',
         title: '',
-        subtitle: ''
+        subtitle: '',
+        imageId: '',
+        imageSource: '',
+        layout: ''
     }))
 
     $app.db()
@@ -214,10 +46,11 @@ routerAdd("GET", "/api/homepage-products", (c) => {
                 ps.id,
                 ps.title,
                 ps.subtitle,
-                json_array_length(ps.products) AS product_count
-            FROM productSections ps
-            GROUP BY ps.id
-            HAVING product_count >= 4
+                ps.layout,
+                COALESCE(i.id, '') AS imageId,
+                COALESCE(i.source, '') AS imageSource
+            FROM homepageProducts ps
+            LEFT JOIN images i ON i.id = ps.images
         `)
         .all(productSections)
 
@@ -244,7 +77,7 @@ routerAdd("GET", "/api/homepage-products", (c) => {
                 SELECT 
                     ps.id,
                     json_each.value AS productId
-                FROM productSections ps, json_each(ps.products)
+                FROM homepageProducts ps, json_each(ps.products)
                 WHERE ps.id IN (${productSections.map(e => `'${e.id}'`).join(',')})
             )
             SELECT 
@@ -281,52 +114,6 @@ routerAdd("GET", "/api/homepage-products", (c) => {
     })
 
     return c.json(200, productSectionProducts)
-})
-
-routerAdd("GET", "/api/promoted-products", (c) => {
-    const products = arrayOf(new DynamicModel({
-        id: '',
-        title: '',
-        tagLine: '',
-        slug: '',
-        sellingPrice: '',
-        discount: '',
-        summary: '',
-        productImageId: '',
-        productImageSource: '',
-        categoryTitle: '',
-        categorySlug: '',
-        seriesTitle: '',
-        seriesSlug: ''
-    }))
-
-    $app.db()
-        .newQuery(`
-            SELECT 
-                p.id,
-                pp.tagLine,
-                p.title,
-                p.slug,
-                p.sellingPrice,
-                p.discount,
-                p.summary,
-                COALESCE(ct.title, '') AS categoryTitle,
-                COALESCE(ct.slug, '') AS categorySlug,
-                COALESCE(s.title, '') AS seriesTitle,
-                COALESCE(s.slug, '') AS seriesSlug,
-                COALESCE(pi.id, '') AS productImageId,
-                COALESCE(pi.source, '') AS productImageSource
-            FROM products p
-            JOIN promotedProducts pp ON pp.products = p.id 
-            LEFT JOIN images pi ON pi.id = REPLACE(p.images ->> 0, '"', '')
-            LEFT JOIN categories ct ON p.categories = ct.id 
-            LEFT JOIN series s ON p.series = s.id
-            GROUP BY p.id
-            ORDER BY p.priority DESC
-        `)
-        .all(products)
-
-    return c.json(200, products)
 })
 
 routerAdd("GET", "/api/homepage-lists", (c) => {
@@ -1247,7 +1034,6 @@ routerAdd("POST", "/api/product", (c) => {
         images,
         priority,
         inStock,
-        displayType, 
         productVariants 
      } = c.requestInfo().body
      
@@ -1281,7 +1067,6 @@ routerAdd("POST", "/api/product", (c) => {
         record.set("images", images);
         record.set("priority", priority);
         record.set("inStock", inStock);
-        record.set("displayType", displayType);
         txDao.save(record)
         const productId = record.get("id")
 
@@ -1316,7 +1101,6 @@ routerAdd("PUT", "/api/product", (c) => {
         images,
         priority,
         inStock,
-        displayType, 
         productVariants 
      } = c.requestInfo().body
      
@@ -1368,7 +1152,6 @@ routerAdd("PUT", "/api/product", (c) => {
         record.set("images", images);
         record.set("priority", priority);
         record.set("inStock", inStock);
-        record.set("displayType", displayType);
         txDao.save(record)
 
         const pvCollection = txDao.findCollectionByNameOrId("productVariants")
