@@ -1005,6 +1005,7 @@ routerAdd("GET", "/api/summary", (c) => {
         .newQuery(`
             SELECT DISTINCT value AS tag
             FROM products, json_each(products.tags)
+            WHERE tag IS NOT NULL  
             ORDER BY tag ASC 
         `)
         .all(tagList)
