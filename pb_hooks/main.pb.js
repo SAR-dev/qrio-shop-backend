@@ -1,9 +1,5 @@
 routerAdd("GET", "/api/homepage", (c) => {
     const homepageCarousel = arrayOf(new DynamicModel({
-        title1: '',
-        title2: '',
-        subtitle: '',
-        buttonText: '',
         redirectTo: '',
         imageId: '',
         imageSource: ''
@@ -12,10 +8,6 @@ routerAdd("GET", "/api/homepage", (c) => {
     $app.db()
         .newQuery(`
             SELECT 
-                hc.title1,
-                hc.title2,
-                hc.subtitle,
-                hc.buttonText,
                 hc.redirectTo,
                 COALESCE(i.id, '') AS imageId,
                 COALESCE(i.source, '') AS imageSource
@@ -538,8 +530,8 @@ routerAdd("POST", "/api/checkout", (c) => {
 
     let invoiceId = '';
 
-    const { receiverName, contactNo1, contactNo2, receiverNote, receiverAddress, shippingCharge } = c.requestInfo().body
-    if (!receiverName || (!contactNo1 && !contactNo2) || !receiverAddress) throw ForbiddenError()
+    const { receiverName, contactNo1, contactNo2, receiverNote, receiverPostCode, receiverCity, receiverAddress, shippingCharge } = c.requestInfo().body
+    if (!receiverName || !contactNo1 || !receiverAddress || !receiverCity || !receiverPostCode) throw ForbiddenError()
 
     const taxFee = 0;
     const status = 'CREATED';
@@ -597,6 +589,8 @@ routerAdd("POST", "/api/checkout", (c) => {
         invoiceRecord.set("contactNo1", contactNo1)
         invoiceRecord.set("contactNo2", contactNo2)
         invoiceRecord.set("receiverNote", receiverNote)
+        invoiceRecord.set("receiverPostCode", receiverPostCode)
+        invoiceRecord.set("receiverCity", receiverCity)
         invoiceRecord.set("receiverAddress", receiverAddress)
         invoiceRecord.set("productsFee", productsFee)
         invoiceRecord.set("shippingCharge", shippingCharge)
@@ -638,6 +632,8 @@ routerAdd("POST", "/api/checkout", (c) => {
         receiverName: '',
         contactNo1: '',
         contactNo2: '',
+        receiverPostCode: '',
+        receiverCity: '',
         receiverAddress: '',
         shippingCost: '',
         taxFee: '',
@@ -654,6 +650,8 @@ routerAdd("POST", "/api/checkout", (c) => {
                 i.receiverName,
                 i.contactNo1,
                 i.contactNo2,
+                i.receiverPostCode,
+                i.receiverCity,
                 i.receiverAddress,
                 s.shippingCost,
                 i.taxFee,

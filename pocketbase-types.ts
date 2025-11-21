@@ -161,10 +161,17 @@ export type HomepageCarouselRecord = {
 	updated?: IsoDateString
 }
 
+export enum HomepageProductsLayoutOptions {
+	"FOUR_IN_ONE" = "FOUR_IN_ONE",
+	"FOUR_WITH_COVER" = "FOUR_WITH_COVER",
+	"FOUR_IN_ROW" = "FOUR_IN_ROW",
+	"PROMOTION" = "PROMOTION",
+}
 export type HomepageProductsRecord = {
 	created?: IsoDateString
 	id: string
 	images?: RecordIdString
+	layout: HomepageProductsLayoutOptions
 	products: RecordIdString[]
 	subtitle?: string
 	title: string
@@ -207,8 +214,10 @@ export type InvoicesRecord = {
 	payments?: RecordIdString[]
 	productsFee: number
 	receiverAddress: string
+	receiverCity: string
 	receiverName: string
 	receiverNote?: string
+	receiverPostCode?: number
 	ref: string
 	shippingCharge: RecordIdString
 	shippingCompany?: string
@@ -287,8 +296,8 @@ export type ShippingChargesRecord = {
 	created?: IsoDateString
 	id: string
 	shippingArea: string
-	shippingCompany: string
 	shippingCost: number
+	shippingNote?: string
 	updated?: IsoDateString
 }
 
