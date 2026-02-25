@@ -161,7 +161,11 @@
                                                         {{range .products}}
                                                         <tr>
                                                             <td style="padding: 0; width: 20px">{{.index}}</td>
-                                                            <td style="padding: 0 15px;">{{.title}}</td>
+                                                            <td style="padding: 0 15px;">
+                                                                <a href="{{$.origin}}/products/{{.slug}}" target="_blank">
+                                                                    {{.title}}
+                                                                </a>
+                                                            </td>
                                                             <td style="padding: 0 15px; width: 50px">{{.amount}}</td>
                                                             <td style="padding: 0; width: 80px">{{.unitPrice}} TK</td>
                                                             <td style="padding: 0; width: 80px; text-align: right;">{{.totalPrice}} TK</td>

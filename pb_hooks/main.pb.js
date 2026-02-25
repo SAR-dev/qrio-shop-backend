@@ -534,8 +534,8 @@ routerAdd("POST", "/api/cart-checkout", (c) => {
 
     let invoiceId = '';
 
-    const { receiverName, contactNo1, contactNo2, receiverNote, receiverPostCode, receiverCity, receiverAddress, shippingCharge } = c.requestInfo().body
-    if (!receiverName || !contactNo1 || !receiverAddress || !receiverCity || !receiverPostCode) throw ForbiddenError()
+    const { receiverName, contactNo1, contactNo2, receiverNote, receiverPostCode, receiverCity, receiverAddress, shippingCharge, origin } = c.requestInfo().body
+    if (!receiverName || !contactNo1 || !receiverAddress || !receiverCity || !receiverPostCode || !origin) throw ForbiddenError()
 
     const taxFee = 0;
     const status = 'CREATED';
@@ -674,6 +674,7 @@ routerAdd("POST", "/api/cart-checkout", (c) => {
 
     const invoiceProductData = arrayOf(new DynamicModel({
         title: '',
+        slug: '',
         amount: '',
         unitPrice: '',
         totalPrice: ''
@@ -683,6 +684,7 @@ routerAdd("POST", "/api/cart-checkout", (c) => {
         .newQuery(`
             SELECT 
                 p.title ,
+                p.slug,
                 ip.amount ,
                 (ip.sellingPrice - ip.discount) AS unitPrice,
                 ((ip.sellingPrice - ip.discount) * ip.amount) AS totalPrice
@@ -699,10 +701,12 @@ routerAdd("POST", "/api/cart-checkout", (c) => {
         `${__hooks}/views/order-receipt.html`
     ).render({
         ...invoiceData,
+        origin,
         products: invoiceProductData.map((e, i) => {
             return {
                 index: i + 1,
                 title: e.title,
+                slug: e.slug,
                 amount: e.amount,
                 unitPrice: e.unitPrice,
                 totalPrice: e.totalPrice
