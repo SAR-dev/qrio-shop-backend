@@ -1,6 +1,8 @@
 routerAdd("GET", "/api/homepage", (c) => {
     const homepageCarousel = arrayOf(new DynamicModel({
         redirectTo: '',
+        title: '',
+        subtitle: '',
         imageId: '',
         imageSource: ''
     }))
@@ -9,6 +11,8 @@ routerAdd("GET", "/api/homepage", (c) => {
         .newQuery(`
             SELECT 
                 hc.redirectTo,
+                COALESCE(hc.title, '') AS title,
+                COALESCE(hc.subtitle, '') AS subtitle,
                 COALESCE(i.id, '') AS imageId,
                 COALESCE(i.source, '') AS imageSource
             FROM homepageCarousel hc 
@@ -524,7 +528,7 @@ routerAdd("POST", "/api/cart", (c) => {
     })
 })
 
-routerAdd("POST", "/api/checkout", (c) => {
+routerAdd("POST", "/api/cart-checkout", (c) => {
     const userId = c.requestInfo().auth?.id
     if (!userId) throw ForbiddenError()
 
@@ -712,6 +716,198 @@ routerAdd("POST", "/api/checkout", (c) => {
             name: $app.settings().meta.senderName,
         },
         to: [{ address: invoiceData.email }],
+        subject: "QRIO - Order Approved",
+        html: html
+    })
+
+    try {
+        $app.newMailClient().send(message)
+    } catch (err) { }
+
+    return c.json(200, {
+        ref: ref
+    })
+})
+
+routerAdd("POST", "/api/product-checkout", (c) => {
+    const userId = c.requestInfo().auth?.id
+    if (!userId) throw ForbiddenError()
+
+    let invoiceId = '';
+
+    const { productId, productAmount, receiverName, contactNo1, contactNo2, receiverNote, receiverPostCode, receiverCity, receiverAddress, shippingCharge } = c.requestInfo().body
+    if ( !productId || productAmount <= 0 ||!receiverName || !contactNo1 || !receiverAddress || !receiverCity || !receiverPostCode) throw ForbiddenError()
+
+    const taxFee = 0;
+    const status = 'CREATED';
+    const ref = (Date.now().toString(36) + Math.random().toString(36).slice(2, 10)).toUpperCase();
+
+    const shippingCost = new DynamicModel({
+        shippingCost: ''
+    })
+
+    $app.db()
+        .newQuery(`
+            SELECT shippingCost FROM shippingCharges
+            WHERE id = {:id}    
+        `)
+        .bind({
+            "id": shippingCharge
+        })
+        .one(shippingCost)
+
+    const cartProduct = new DynamicModel({
+        id: '',
+        sellingPrice: '',
+        discount: '',
+        amount: ''
+    })
+
+    $app.db()
+        .newQuery(`
+            SELECT 
+                p.id,
+                p.sellingPrice,
+                p.discount,
+                {:productAmount} AS amount
+            FROM products p 
+            WHERE p.id = {:productId}
+            AND p.inStock = 1
+        `)
+        .bind({
+            "productId": productId,
+            "productAmount": productAmount
+        })
+        .one(cartProduct)
+
+    const productsFee = (Number(cartProduct.sellingPrice) - Number(cartProduct.discount)) * Number(cartProduct.amount)
+
+    $app.runInTransaction((txDao) => {
+        // create invoice
+        const invoiceCollection = txDao.findCollectionByNameOrId("invoices")
+        const invoiceRecord = new Record(invoiceCollection)
+        invoiceRecord.set("ref", ref)
+        invoiceRecord.set("users", userId)
+        invoiceRecord.set("receiverName", receiverName)
+        invoiceRecord.set("contactNo1", contactNo1)
+        invoiceRecord.set("contactNo2", contactNo2)
+        invoiceRecord.set("receiverNote", receiverNote)
+        invoiceRecord.set("receiverPostCode", receiverPostCode)
+        invoiceRecord.set("receiverCity", receiverCity)
+        invoiceRecord.set("receiverAddress", receiverAddress)
+        invoiceRecord.set("productsFee", productsFee)
+        invoiceRecord.set("shippingCharge", shippingCharge)
+        invoiceRecord.set("taxFee", taxFee)
+        invoiceRecord.set("totalFee", (Number(productsFee) + Number(shippingCost.shippingCost) + Number(taxFee)))
+        invoiceRecord.set("status", status)
+        txDao.save(invoiceRecord)
+
+        // get invoice id by ref
+        const invoice = txDao.findFirstRecordByFilter(
+            "invoices",
+            "ref = {:ref}",
+            { "ref": ref },
+        )
+        invoiceId = invoice.publicExport().id
+
+        // add invoice products
+        const inPrCollection = txDao.findCollectionByNameOrId("invoiceProducts")
+        const inPrRecord = new Record(inPrCollection)
+        inPrRecord.set("invoices", invoiceId)
+        inPrRecord.set("products", cartProduct.id)
+        inPrRecord.set("sellingPrice", Number(cartProduct.sellingPrice))
+        inPrRecord.set("discount", Number(cartProduct.discount))
+        inPrRecord.set("amount", Number(cartProduct.amount))
+        txDao.save(inPrRecord)
+    })
+
+    const invoiceData = new DynamicModel({
+        name: '',
+        email: '',
+        receiverName: '',
+        contactNo1: '',
+        contactNo2: '',
+        receiverPostCode: '',
+        receiverCity: '',
+        receiverAddress: '',
+        shippingCost: '',
+        taxFee: '',
+        totalFee: '',
+        ref: '',
+        created: ''
+    })
+
+    $app.db()
+        .newQuery(`
+            SELECT 
+                u.name ,
+                u.email,
+                i.receiverName,
+                i.contactNo1,
+                i.contactNo2,
+                i.receiverPostCode,
+                i.receiverCity,
+                i.receiverAddress,
+                s.shippingCost,
+                i.taxFee,
+                i.totalFee,
+                i.ref,
+                strftime('%d-%m-%Y %I:%M%p', i.created) AS created
+            FROM invoices i 
+            JOIN shippingCharges s ON i.shippingCharge = s.id
+            JOIN users u ON i.users = u.id
+            WHERE i.id = {:invoiceId}
+        `)
+        .bind({
+            invoiceId
+        })
+        .one(invoiceData)
+
+    const invoiceProductData = arrayOf(new DynamicModel({
+        title: '',
+        amount: '',
+        unitPrice: '',
+        totalPrice: ''
+    }))
+
+    $app.db()
+        .newQuery(`
+            SELECT 
+                p.title ,
+                ip.amount ,
+                (ip.sellingPrice - ip.discount) AS unitPrice,
+                ((ip.sellingPrice - ip.discount) * ip.amount) AS totalPrice
+            FROM invoiceProducts ip 
+            JOIN products p ON ip.products = p.id 
+            WHERE ip.invoices = {:invoiceId}    
+        `)
+        .bind({
+            invoiceId
+        })
+        .all(invoiceProductData)
+
+    const html = $template.loadFiles(
+        `${__hooks}/views/order-receipt.html`
+    ).render({
+        ...invoiceData,
+        products: invoiceProductData.map((e, i) => {
+            return {
+                index: i + 1,
+                title: e.title,
+                amount: e.amount,
+                unitPrice: e.unitPrice,
+                totalPrice: e.totalPrice
+            }
+        })
+    })
+
+    const message = new MailerMessage({
+        from: {
+            address: $app.settings().meta.senderAddress,
+            name: $app.settings().meta.senderName,
+        },
+        to: [{ address: invoiceData.email }],
+        cc: [{address: "qrio.office@gmail.com"}],
         subject: "QRIO - Order Approved",
         html: html
     })
