@@ -534,8 +534,8 @@ routerAdd("POST", "/api/cart-checkout", (c) => {
 
     let invoiceId = '';
 
-    const { receiverName, contactNo1, contactNo2, receiverNote, receiverPostCode, receiverCity, receiverAddress, shippingCharge, origin } = c.requestInfo().body
-    if (!receiverName || !contactNo1 || !receiverAddress || !receiverCity || !receiverPostCode || !origin) throw ForbiddenError()
+    const { receiverName, contactNo1, contactNo2, receiverNote, receiverPostCode, receiverCity, receiverAddress, shippingCharge } = c.requestInfo().body
+    if (!receiverName || !contactNo1 || !receiverAddress || !receiverCity || !receiverPostCode) throw ForbiddenError()
 
     const taxFee = 0;
     const status = 'CREATED';
@@ -683,9 +683,9 @@ routerAdd("POST", "/api/cart-checkout", (c) => {
     $app.db()
         .newQuery(`
             SELECT 
-                p.title ,
-                p.slug,
-                ip.amount ,
+                p.title AS title,
+                p.slug AS slug,
+                ip.amount AS amount,
                 (ip.sellingPrice - ip.discount) AS unitPrice,
                 ((ip.sellingPrice - ip.discount) * ip.amount) AS totalPrice
             FROM invoiceProducts ip 
@@ -701,7 +701,6 @@ routerAdd("POST", "/api/cart-checkout", (c) => {
         `${__hooks}/views/order-receipt.html`
     ).render({
         ...invoiceData,
-        origin,
         products: invoiceProductData.map((e, i) => {
             return {
                 index: i + 1,
@@ -869,6 +868,7 @@ routerAdd("POST", "/api/product-checkout", (c) => {
 
     const invoiceProductData = arrayOf(new DynamicModel({
         title: '',
+        slug: '',
         amount: '',
         unitPrice: '',
         totalPrice: ''
@@ -877,8 +877,9 @@ routerAdd("POST", "/api/product-checkout", (c) => {
     $app.db()
         .newQuery(`
             SELECT 
-                p.title ,
-                ip.amount ,
+                p.title AS title,
+                p.slug AS slug,
+                ip.amount AS amount,
                 (ip.sellingPrice - ip.discount) AS unitPrice,
                 ((ip.sellingPrice - ip.discount) * ip.amount) AS totalPrice
             FROM invoiceProducts ip 
@@ -898,6 +899,7 @@ routerAdd("POST", "/api/product-checkout", (c) => {
             return {
                 index: i + 1,
                 title: e.title,
+                slug: e.slug,
                 amount: e.amount,
                 unitPrice: e.unitPrice,
                 totalPrice: e.totalPrice
